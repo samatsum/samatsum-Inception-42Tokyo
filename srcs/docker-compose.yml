@@ -1,0 +1,127 @@
+version: '3.8'
+services:
+# nginx ------------------------------------------------------------
+  nginx:
+    build: ./requirements/nginx/
+    container_name: nginx
+    depends_on:
+      - wordpress
+    ports:
+      - "443:443"
+    env_file:
+      - .env
+    volumes:
+      - wordpress_data:/var/www/html/
+    restart: unless-stopped
+    networks:
+      inception:
+
+# wordpress ------------------------------------------------------------
+  wordpress:
+    build: ./requirements/wordpress/.
+    container_name: wp-php
+    depends_on:
+      - mariadb
+    volumes:
+      - wordpress_data:/var/www/html/
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      inception:
+
+# mariadb ------------------------------------------------------------
+  mariadb:
+    build: ./requirements/mariadb/.
+    container_name: mariadb
+    volumes:
+      - mariadb_data:/var/lib/mysql
+    env_file:
+      - .env
+    restart: unless-stopped
+    networks:
+      inception:
+
+# adminer ------------------------------------------------------------
+  adminer:
+    build: ./requirements/bonus/adminer/.
+    container_name: adminer
+    depends_on:
+      - mariadb
+      - redis
+    restart: unless-stopped
+    networks:
+      inception:
+
+# redis ------------------------------------------------------------
+  redis:
+    build: ./requirements/bonus/redis/.
+    container_name: redis
+    restart: unless-stopped
+    networks:
+      inception:
+
+# prometheus ------------------------------------------------------------
+  prometheus:
+    build: ./requirements/bonus/prometheus/.
+    container_name: prometheus
+    volumes:
+      - prometheus_data:/prometheus
+    restart: unless-stopped
+    networks:
+      inception:
+
+# # grafana ------------------------------------------------------------
+#   grafana:
+#     build: ./requirements/bonus/grafana/.
+#     container_name: grafana
+#     volumes:
+#       - grafana_data:/var/lib/grafana
+#     environment:
+#       - GF_SECURITY_ADMIN_USER=admin
+#       - GF_SECURITY_ADMIN_PASSWORD=password
+#       - GF_SERVER_ROOT_URL=https://samatsum.42.fr/grafana
+#       - GF_SERVER_SERVE_FROM_SUB_PATH=true
+#       - GF_SERVER_DOMAIN=samatsum.42.fr
+#     restart: unless-stopped
+#     networks:
+#       inception:
+#     depends_on:
+#       - prometheus
+
+networks:
+  inception:
+    name: inception-network
+    driver: bridge
+
+volumes:
+  mariadb_data:
+    name: mariadb
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/$(USER)/data/mariadb
+      o: bind
+
+  wordpress_data:
+    name: wordpress
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/$(USER)/data/wordpress
+      o: bind
+
+  prometheus_data:
+    name: prometheus
+    driver: local
+    driver_opts:
+      type: none
+      device: /home/$(USER)/data/prometheus
+      o: bind
+
+  grafana_data:
+    name: grafana
+    driver: local
+    driver_opts:
+      type: none
+      device: /Users/hiro/Documents/42/inception-42/srcs/volumes/grafana
