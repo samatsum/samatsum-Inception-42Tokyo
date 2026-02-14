@@ -1,4 +1,3 @@
-version: '3.8'
 services:
 # nginx ------------------------------------------------------------
   nginx:
@@ -100,7 +99,7 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /home/$(USER)/data/mariadb
+      device: /home/samatsum/data/mariadb
       o: bind
 
   wordpress_data:
@@ -108,7 +107,7 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /home/$(USER)/data/wordpress
+      device: /home/samatsum/data/wordpress
       o: bind
 
   prometheus_data:
@@ -116,12 +115,6 @@ volumes:
     driver: local
     driver_opts:
       type: none
-      device: /home/$(USER)/data/prometheus
+      device: /home/samatsum/data/prometheus
       o: bind
 
-  grafana_data:
-    name: grafana
-    driver: local
-    driver_opts:
-      type: none
-      device: /Users/hiro/Documents/42/inception-42/srcs/volumes/grafana

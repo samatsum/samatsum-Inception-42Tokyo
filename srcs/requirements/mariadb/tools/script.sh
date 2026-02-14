@@ -1,21 +1,27 @@
 #!/bin/bash
 
-mysql_install_db
+# 初回のみDB初期化
+if [ ! -d "/var/lib/mysql/mysql" ]; then
+    mysql_install_db --user=root --datadir=/var/lib/mysql
 
-mysqld_safe &
+    mysqld_safe --datadir=/var/lib/mysql &
 
-# Wait for the MySQL server to be ready
-until mysqladmin ping >/dev/null 2>&1; do
-    echo "Waiting for MariaDB to be ready..."
-    sleep 1
-done
+    until mysqladmin ping >/dev/null 2>&1; do
+        echo "Waiting for MariaDB to be ready..."
+        sleep 1
+    done
 
-mysql -u root <<EOF
+    mysql -u root <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
-CREATE DATABASE ${MYSQL_DATABASE};
-CREATE USER '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
-GRANT ALL PRIVILEGES ON *.* TO '${MYSQL_USER}'@'%' WITH GRANT OPTION;
+CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
+CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
+GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
 
-wait
+    mysqladmin -u root -p"${MYSQL_ROOT_PASSWORD}" shutdown
+    sleep 2
+fi
+
+# フォアグラウンドで起動（PID 1になる）
+exec mysqld_safe --datadir=/var/lib/mysql

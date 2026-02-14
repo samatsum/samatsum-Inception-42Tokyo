@@ -4,7 +4,8 @@ EXPOSE 443
 
 RUN apt update && apt upgrade -y && apt install -y \
     nginx \
-    openssl
+    openssl \
+    gettext-base
 
 COPY conf/default /etc/nginx/sites-available/.
 COPY tools/script.sh /script.sh

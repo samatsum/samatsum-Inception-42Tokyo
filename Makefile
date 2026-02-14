@@ -15,62 +15,42 @@
 # Configuration
 COMPOSE = docker compose -f srcs/docker-compose.yml
 VOLUME = /home/samatsum/data
-# VOLUME = /Users/hiro/Documents/42/inception-42/srcs/volumes/
 
-# Primary Control Targets
-# -----------------------
-all : up
+all: up
 
-# Docker Compose Commands
-# -----------------------
-up :
+up:
 	@mkdir -p $(VOLUME)/mariadb
 	@mkdir -p $(VOLUME)/wordpress
 	@mkdir -p $(VOLUME)/prometheus
-# @mkdir -p $(VOLUME)/grafana
 	@chmod 755 $(VOLUME)
-	@chmod 755 $(VOLUME)/wordpress
 	@chmod 755 $(VOLUME)/mariadb
+	@chmod 755 $(VOLUME)/wordpress
 	@chmod 755 $(VOLUME)/prometheus
-# @chmod 777 $(VOLUME)/grafana
-	@$(COMPOSE) build --no-cache
 	@$(COMPOSE) up --build
 
-down :
-	@rm -rf $(VOLUME)
+down:
 	@$(COMPOSE) down
 
-stop :
+stop:
 	@$(COMPOSE) stop
 
-start :
+start:
 	@$(COMPOSE) start
 
-# Utility
-# -----------------------
 logs:
 	@$(COMPOSE) logs -f
 
-status :
+status:
 	@docker ps
 
 clean:
-	@docker stop $$(docker ps -qa) 2>/dev/null || true
-	@docker rm $$(docker ps -qa) 2>/dev/null || true
-	@docker rmi $$(docker images -qa) 2>/dev/null || true
-	@docker volume rm $$(docker volume ls -q) 2>/dev/null || true
-	@docker network rm $$(docker network ls -q) 2>/dev/null || true
+	@$(COMPOSE) down -v --rmi all --remove-orphans 2>/dev/null || true
 	@rm -rf $(VOLUME)
 
-docker-restart:
-	@echo "Restarting Docker Desktop..."
-	@osascript -e 'quit app "Docker"'
-	@sleep 5
-	@open -a Docker
-	@echo "Waiting for Docker to start..."
-	@sleep 20
-
-fclean: clean docker-restart
+fclean: clean
+	@docker system prune -af 2>/dev/null || true
 	@rm -rf $(VOLUME)
 
-re: fclean docker-restart up
+re: fclean up
+
+.PHONY: all up down stop start logs status clean fclean re
