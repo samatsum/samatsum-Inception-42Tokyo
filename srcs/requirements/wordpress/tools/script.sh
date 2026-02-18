@@ -2,6 +2,11 @@
 
 WP_PATH="/var/www/html"
 
+# secretsからパスワードを読み込む
+MYSQL_PASSWORD=$(cat /run/secrets/db_password)
+WP_ADMIN_PASSWORD=$(cat /run/secrets/credentials)
+WP_NORMAL_PASSWORD=$(cat /run/secrets/wp_normal_password)
+
 # wp-cliがなければダウンロード
 if [ ! -f "/usr/local/bin/wp" ]; then
     curl -O https://raw.githubusercontent.com/wp-cli/builds/gh-pages/phar/wp-cli.phar
@@ -54,8 +59,3 @@ fi
 
 # フォアグラウンドで起動（PID 1になる）
 exec php-fpm7.4 -F
-
-#wp-cli を /usr/local/bin/wp に移動：パスが通り、2回目以降ダウンロード不要
-#wp-config.php の存在で初回判定：ボリュームにデータがあればスキップ
-#wp db check でDB接続待ち：depends_on だけでは不十分な起動順問題を解決
-#exec php-fpm7.4 -F：PID 1問題を解消

@@ -1,0 +1,5 @@
+# Secrets - パスワードファイルをGit管理から除外
+secrets/*.txt
+
+# Environment
+srcs/.env

@@ -25,6 +25,10 @@ services:
       - wordpress_data:/var/www/html/
     env_file:
       - .env
+    secrets:
+      - db_password
+      - credentials
+      - wp_normal_password
     restart: unless-stopped
     networks:
       inception:
@@ -37,6 +41,9 @@ services:
       - mariadb_data:/var/lib/mysql
     env_file:
       - .env
+    secrets:
+      - db_password
+      - db_root_password
     restart: unless-stopped
     networks:
       inception:
@@ -70,23 +77,15 @@ services:
     networks:
       inception:
 
-# # grafana ------------------------------------------------------------
-#   grafana:
-#     build: ./requirements/bonus/grafana/.
-#     container_name: grafana
-#     volumes:
-#       - grafana_data:/var/lib/grafana
-#     environment:
-#       - GF_SECURITY_ADMIN_USER=admin
-#       - GF_SECURITY_ADMIN_PASSWORD=password
-#       - GF_SERVER_ROOT_URL=https://samatsum.42.fr/grafana
-#       - GF_SERVER_SERVE_FROM_SUB_PATH=true
-#       - GF_SERVER_DOMAIN=samatsum.42.fr
-#     restart: unless-stopped
-#     networks:
-#       inception:
-#     depends_on:
-#       - prometheus
+secrets:
+  db_password:
+    file: ../secrets/db_password.txt
+  db_root_password:
+    file: ../secrets/db_root_password.txt
+  credentials:
+    file: ../secrets/credentials.txt
+  wp_normal_password:
+    file: ../secrets/wp_normal_password.txt
 
 networks:
   inception:
@@ -117,4 +116,3 @@ volumes:
       type: none
       device: /home/samatsum/data/prometheus
       o: bind
-

@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# secretsからパスワードを読み込む
+MYSQL_ROOT_PASSWORD=$(cat /run/secrets/db_root_password)
+MYSQL_PASSWORD=$(cat /run/secrets/db_password)
+
 # 初回のみDB初期化
 if [ ! -d "/var/lib/mysql/mysql" ]; then
     mysql_install_db --user=root --datadir=/var/lib/mysql
