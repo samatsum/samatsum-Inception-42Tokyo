@@ -1,10 +1,10 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 RUN apt update && apt upgrade -y && apt install -y \
-    php7.4 \
-    php7.4-fpm \
-    php7.4-mysql \
-    php7.4-redis \
+    php8.2 \
+    php8.2-fpm \
+    php8.2-mysql \
+    php8.2-redis \
     curl \
     wget \
     unzip \
@@ -20,7 +20,7 @@ RUN mkdir /run/php && \
     unzip redis-cache.latest-stable.zip && \
     rm redis-cache.latest-stable.zip
 
-RUN echo "pm.status_path = /status" >> /etc/php/7.4/fpm/pool.d/www.conf
+RUN echo "pm.status_path = /status" >> /etc/php/8.2/fpm/pool.d/www.conf
 
 RUN chmod +x script.sh
 

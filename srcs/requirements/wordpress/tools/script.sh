@@ -58,4 +58,4 @@ if ! wp core is-installed --path=${WP_PATH} --allow-root 2>/dev/null; then
 fi
 
 # フォアグラウンドで起動（PID 1になる）
-exec php-fpm7.4 -F
+exec php-fpm8.2 -F
