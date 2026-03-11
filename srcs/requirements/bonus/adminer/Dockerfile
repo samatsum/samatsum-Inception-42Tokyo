@@ -1,9 +1,9 @@
-FROM debian:bullseye
+FROM debian:bookworm
 
 RUN apt-get update && apt-get install -y \
-    php7.4 \
-    php7.4-mysql \
-    php7.4-fpm \
+    php8.2 \
+    php8.2-mysql \
+    php8.2-fpm \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
@@ -12,7 +12,7 @@ RUN mkdir -p /run/php && \
 
 RUN curl -L https://github.com/vrana/adminer/releases/download/v4.8.1/adminer-4.8.1.php -o /var/www/html/index.php
 
-COPY conf/www.conf /etc/php/7.4/fpm/pool.d/
+COPY conf/www.conf /etc/php/8.2/fpm/pool.d/www.conf
 COPY tools/script.sh /script.sh
 
 RUN chmod +x /script.sh && \

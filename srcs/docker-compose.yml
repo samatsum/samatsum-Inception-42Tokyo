@@ -48,18 +48,17 @@ services:
     networks:
       inception:
 
-# adminer ------------------------------------------------------------
+# adminer-bonus ------------------------------------------------------------
   adminer:
     build: ./requirements/bonus/adminer/.
     container_name: adminer
     depends_on:
       - mariadb
-      - redis
     restart: unless-stopped
     networks:
       inception:
 
-# redis ------------------------------------------------------------
+# redis-bonus ------------------------------------------------------------
   redis:
     build: ./requirements/bonus/redis/.
     container_name: redis
@@ -67,7 +66,7 @@ services:
     networks:
       inception:
 
-# prometheus ------------------------------------------------------------
+# prometheus-bonus ------------------------------------------------------------
   prometheus:
     build: ./requirements/bonus/prometheus/.
     container_name: prometheus
@@ -76,6 +75,43 @@ services:
     restart: unless-stopped
     networks:
       inception:
+
+# static-site-bonus ------------------------------------------------------------
+  static-site:
+    build: ./requirements/bonus/static-site/.
+    container_name: static-site
+    restart: unless-stopped
+    networks:
+      inception:
+
+# ftp-bonus ------------------------------------------------------------
+  ftp:
+    build: ./requirements/bonus/ftp/.
+    container_name: ftp
+    ports:
+      - "21:21"
+      - "21100-21110:21100-21110"
+    volumes:
+      - wordpress_data:/var/www/html
+    env_file:
+      - .env
+    secrets:
+      - ftp_password
+    restart: unless-stopped
+    networks:
+      inception:
+
+
+# grafana-bonus ------------------------------------------------------------
+  grafana:
+    build: ./requirements/bonus/grafana/.
+    container_name: grafana
+    depends_on:
+      - prometheus
+    restart: unless-stopped
+    networks:
+      inception:
+
 
 secrets:
   db_password:
@@ -86,6 +122,8 @@ secrets:
     file: ../secrets/credentials.txt
   wp_normal_password:
     file: ../secrets/wp_normal_password.txt
+  ftp_password:
+    file: ../secrets/ftp_password.txt
 
 networks:
   inception:
@@ -116,3 +154,4 @@ volumes:
       type: none
       device: /home/samatsum/data/prometheus
       o: bind
+

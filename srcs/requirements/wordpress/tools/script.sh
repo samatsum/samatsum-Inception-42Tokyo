@@ -24,7 +24,9 @@ if [ ! -f "${WP_PATH}/wp-config.php" ]; then
         --dbuser=${MYSQL_USER} \
         --dbpass=${MYSQL_PASSWORD} \
         --dbhost=mariadb \
+        --skip-check \
         --allow-root
+
 fi
 
 # DB接続を待つ

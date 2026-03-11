@@ -1,3 +1,3 @@
 #!/bin/bash
 
-php-fpm7.4 -F
+php-fpm8.2 -F

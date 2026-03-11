@@ -1,14 +1,16 @@
 FROM debian:bookworm
 
 RUN apt-get update && apt-get install -y \
-    redis-server \
+    vsftpd \
     && rm -rf /var/lib/apt/lists/*
 
-COPY conf/redis.conf /etc/redis/redis.conf
+RUN mkdir -p /var/run/vsftpd/empty
+
+COPY conf/vsftpd.conf /etc/vsftpd.conf
 COPY tools/script.sh /script.sh
 
 RUN chmod +x /script.sh
 
-EXPOSE 6379
+EXPOSE 21 21100-21110
 
 CMD ["/script.sh"]

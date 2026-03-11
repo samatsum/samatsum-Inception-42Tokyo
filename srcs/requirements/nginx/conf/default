@@ -68,10 +68,11 @@ server {
 	# 		fastcgi_pass wordpress:9000;
 	# }
 
-    # location /grafana/ {
-    #     proxy_set_header Host $http_host;
-    #     proxy_pass http://grafana:3000/;
-    # }
+    # Gradana
+     location /grafana/ {
+         proxy_set_header Host $http_host;
+         proxy_pass http://grafana:3000;
+     }
 
     # Prometheus
     location /prometheus/ {
@@ -97,18 +98,11 @@ server {
         fastcgi_param PATH_INFO $fastcgi_path_info;
     }
 
-	# location /metrics {
-	# 		stub_status on;
-	# 		access_log off;
-	# 		allow all;
-	# }
+    location /site/ {
+        proxy_set_header Host $http_host;
+        proxy_pass http://static-site:5000/;
+    }
 
-	# deny access to .htaccess files, if Apache's document root
-	# concurs with nginx's one
-	#
-	#location ~ /\.ht {
-	#	deny all;
-	#}
 }
 
 
