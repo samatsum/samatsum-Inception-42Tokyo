@@ -1,19 +1,19 @@
 services:
 # nginx ------------------------------------------------------------
   nginx:
-    build: ./requirements/nginx/
+    build: ./requirements/nginx/ #Dockerfile をビルドする
     container_name: nginx
     depends_on:
-      - wordpress
+      - wordpress #WordPress が起動してから動く
     ports:
-      - "443:443"
+      - "443:443" #ホストの443番をコンテナの443番に繋ぐ
     env_file:
-      - .env
+      - .env #DOMAIN_NAME などの変数を受け取る
     volumes:
-      - wordpress_data:/var/www/html/
+      - wordpress_data:/var/www/html/ #WordPress のファイルを共有する
     restart: unless-stopped
     networks:
-      inception:
+      inception: # 共通のネットワークに参加する
 
 # wordpress ------------------------------------------------------------
   wordpress:
