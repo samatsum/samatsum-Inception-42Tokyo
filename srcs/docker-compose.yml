@@ -1,10 +1,16 @@
+# このファイルは、複数の独立したプロセス（コンテナ）を同じネットワーク空間に配置し、
+# データ永続化層（ボリューム）と紐付ける「Infrastructure as Code (IaC)」の心臓部です。
+
 services:
 # nginx ------------------------------------------------------------
   nginx:
+   #image: ha hitsuyou nai???????
     build: ./requirements/nginx/ #Dockerfile をビルドする
     container_name: nginx
     depends_on:
       - wordpress #WordPress が起動してから動く
+    # iptablesのNAT（Network Address Translation）ルールをホストOSに設定し、
+    # ホストの物理NICの443番宛てのパケットを、このコンテナの仮想IPの443番へ転送する。
     ports:
       - "443:443" #ホストの443番をコンテナの443番に繋ぐ
     env_file:

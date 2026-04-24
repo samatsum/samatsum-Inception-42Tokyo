@@ -29,10 +29,20 @@ if [ ! -f "${WP_PATH}/wp-config.php" ]; then
 
 fi
 
-# DB接続を待つ
+# DB接続を待つ(状態の同期（競合状態の防止）)
+# WordPress側から「DBに接続できるか？」を確認（ポーリング）
+# 2秒 × 60回 = 120秒（2分）のタイムアウト
+MAX_TRIES=60
+TRIES=0
+
 until wp db check --path=${WP_PATH} --allow-root 2>/dev/null; do
-    echo "Waiting for MariaDB..."
+    if [ $TRIES -ge $MAX_TRIES ]; then
+        echo "Error: MariaDB connection timeout after 2 minutes." >&2
+        exit 1 # ここで異常終了させ、Dockerデーモンに再起動を任せる
+    fi
+    echo "Waiting for MariaDB... ($TRIES/$MAX_TRIES)"
     sleep 2
+    TRIES=$((TRIES+1))
 done
 
 # WordPressが未インストールならインストール

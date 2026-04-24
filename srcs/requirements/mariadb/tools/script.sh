@@ -1,5 +1,7 @@
 #!/bin/bash
 
+# 環境変数（ENV）にパスワードを入れると、コンテナ内の全プロセスから見えてしまい、
+# docker inspectコマンドでも丸見えになるため、ファイルからの読み出し（tmpfs）で堅牢性を確保する。
 # secretsからパスワードを読み込む
 MYSQL_ROOT_PASSWORD=$(cat /run/secrets/db_root_password)
 MYSQL_PASSWORD=$(cat /run/secrets/db_password)
@@ -10,11 +12,20 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
 
     mysqld_safe --datadir=/var/lib/mysql &
 
+    # 裏側で起動したMariaDBが、リクエストを受け付けられる状態になるまでポーリング（定期確認）する。
+    MAX_TRIES=120
+    TRIES=0
     until mysqladmin ping >/dev/null 2>&1; do
-        echo "Waiting for MariaDB to be ready..."
+        if [ "$TRIES" -ge "$MAX_TRIES" ]; then
+            echo "Error: MariaDB background startup timeout." >&2
+            exit 1 # 異常終了させてDockerに再起動を促す
+        fi
+        echo "Waiting for MariaDB to be ready... ($TRIES/$MAX_TRIES)"
         sleep 1
+        TRIES=$((TRIES+1))
     done
 
+# DBの作成、ユーザーの作成、権限の付与を行う。
     mysql -u root <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
 CREATE DATABASE IF NOT EXISTS ${MYSQL_DATABASE};
@@ -23,6 +34,7 @@ GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
 
+    # 裏側で動いているMariaDBを正規の手段でシャットダウン
     mysqladmin -u root -p"${MYSQL_ROOT_PASSWORD}" shutdown
     sleep 2
 fi
