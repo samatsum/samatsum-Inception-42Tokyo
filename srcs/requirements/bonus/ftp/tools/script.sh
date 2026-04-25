@@ -1,7 +1,9 @@
 #!/bin/bash
 
+set +x
 FTP_USER=${FTP_USER:-ftpuser}
 FTP_PASS=$(cat /run/secrets/ftp_password)
+set -x
 
 # ユーザーが存在しなければ作成
 if ! id "$FTP_USER" &>/dev/null; then

@@ -3,14 +3,15 @@
 # 環境変数（ENV）にパスワードを入れると、コンテナ内の全プロセスから見えてしまい、
 # docker inspectコマンドでも丸見えになるため、ファイルからの読み出し（tmpfs）で堅牢性を確保する。
 # secretsからパスワードを読み込む
+set +x
 MYSQL_ROOT_PASSWORD=$(cat /run/secrets/db_root_password)
 MYSQL_PASSWORD=$(cat /run/secrets/db_password)
 
 # 初回のみDB初期化
 if [ ! -d "/var/lib/mysql/mysql" ]; then
-    mysql_install_db --user=root --datadir=/var/lib/mysql
+    mysql_install_db --user=mysql --datadir=/var/lib/mysql
 
-    mysqld_safe --datadir=/var/lib/mysql &
+    mariadbd --user=mysql --datadir=/var/lib/mysql &
 
     # 裏側で起動したMariaDBが、リクエストを受け付けられる状態になるまでポーリング（定期確認）する。
     MAX_TRIES=120
@@ -24,6 +25,7 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
         sleep 1
         TRIES=$((TRIES+1))
     done
+
 
 # DBの作成、ユーザーの作成、権限の付与を行う。
     mysql -u root <<EOF
@@ -39,5 +41,6 @@ EOF
     sleep 2
 fi
 
+
 # フォアグラウンドで起動（PID 1になる）
-exec mysqld_safe --datadir=/var/lib/mysql
+exec mariadbd --user=mysql --datadir=/var/lib/mysql

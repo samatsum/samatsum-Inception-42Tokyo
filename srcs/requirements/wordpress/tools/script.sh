@@ -3,9 +3,11 @@
 WP_PATH="/var/www/html"
 
 # secretsからパスワードを読み込む
+set +x
 MYSQL_PASSWORD=$(cat /run/secrets/db_password)
 WP_ADMIN_PASSWORD=$(cat /run/secrets/credentials)
 WP_NORMAL_PASSWORD=$(cat /run/secrets/wp_normal_password)
+set -x
 
 # wp-cliがなければダウンロード
 if [ ! -f "/usr/local/bin/wp" ]; then
@@ -46,6 +48,7 @@ until wp db check --path=${WP_PATH} --allow-root 2>/dev/null; do
 done
 
 # WordPressが未インストールならインストール
+
 if ! wp core is-installed --path=${WP_PATH} --allow-root 2>/dev/null; then
     wp core install \
         --path=${WP_PATH} \
