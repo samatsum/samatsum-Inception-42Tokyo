@@ -139,7 +139,7 @@ To confirm all services are running:
 
     docker ps -a
 
-All containers should show `Up` in the STATUS column. Expected containers: `nginx`, `wp-php`, `mariadb`, `redis`, `adminer`, `prometheus`, `grafana`, `static-site`, `ftp`.
+All containers should show `Up` in the STATUS column. Expected containers: `nginx`, `wordpress`, `mariadb`, `redis`, `adminer`, `prometheus`, `grafana`, `static-site`, `ftp`.
 
 **Quick verification checklist:**
 

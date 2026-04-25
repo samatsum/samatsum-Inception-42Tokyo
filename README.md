@@ -129,7 +129,7 @@ With `network: host`, a container shares the host's network stack directly. The 
 
 A Docker bridge network creates an isolated virtual network. Containers on the same bridge can communicate using container names as DNS hostnames (Docker's embedded DNS resolves them). Containers on different bridges cannot communicate unless explicitly connected. Port exposure to the host is controlled with `ports:` in the Compose file.
 
-This project uses a single bridge network (`inception-network`). All containers are attached to it and can reach each other by name (e.g., `wp-php:9000`, `mariadb:3306`, `redis:6379`). Only NGINX publishes port 443 to the host. No other service is directly accessible from outside, enforcing the subject's requirement that NGINX is the sole entry point.
+This project uses a single bridge network (`inception-network`). All containers are attached to it and can reach each other by name (e.g., `wordpress:9000`, `mariadb:3306`, `redis:6379`). Only NGINX publishes port 443 to the host. No other service is directly accessible from outside, enforcing the subject's requirement that NGINX is the sole entry point.
 
 ### Docker Volumes vs Bind Mounts
 

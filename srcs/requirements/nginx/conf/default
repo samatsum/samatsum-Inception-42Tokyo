@@ -51,11 +51,11 @@ server {
     # 対象: WordPress, Adminer
     # 理由: 相手が「PHP実行エンジン (PHP-FPM)」であるため。
     # NGINX自身はPHPを解釈できないため、HTTPリクエストをFastCGI形式に翻訳して
-    # 専門のコンテナ（wp-php, adminer）へ中継します。
+    # 専門のコンテナ（wordpresss, adminer）へ中継します。
     # ========================================================
     location ~ \.php$ {
         fastcgi_split_path_info ^(.+\.php)(/.+)$;
-        fastcgi_pass wp-php:9000;
+        fastcgi_pass wordpress:9000;
         fastcgi_index index.php;
         
         include fastcgi_params;

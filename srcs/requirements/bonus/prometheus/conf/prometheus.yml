@@ -3,22 +3,8 @@ global:
   evaluation_interval: 15s
 
 scrape_configs:
+  # Prometheus自身を監視する
   - job_name: 'prometheus'
     metrics_path: '/metrics'
     static_configs:
       - targets: ['localhost:9090']
-
-  - job_name: 'nginx'
-    metrics_path: '/metrics'
-    static_configs:
-      - targets: ['nginx:443']
-    scheme: https
-    tls_config:
-      insecure_skip_verify: true
-
-  # PHP-FPM metrics
-  - job_name: 'php-fpm'
-    metrics_path: '/status'
-    static_configs:
-      - targets: ['wordpress:9000']
-    scheme: http

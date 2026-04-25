@@ -46,9 +46,9 @@ Create `srcs/.env` with the following content:
     MYSQL_USER=wpuser
     WP_TITLE=inception
     WP_ADMIN_USER=supervisor
-    WP_ADMIN_EMAIL=admin@example.com
+    WP_ADMIN_EMAIL=zunandkun@gmail.com
     WP_NORMAL_USER=viewer
-    WP_NORMAL_EMAIL=viewer@example.com
+    WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
 
 Important: `WP_ADMIN_EMAIL` and `WP_NORMAL_EMAIL` must be different addresses. The admin username must not contain "admin" or "administrator" (subject requirement).
 
@@ -94,7 +94,7 @@ Important: Always use `make` targets instead of calling `docker compose` directl
 ### View logs for a specific container
 
     docker logs <container-name>
-    docker logs -f wp-php          # follow WordPress logs
+    docker logs -f wordpress          # follow WordPress logs
     docker logs --tail 50 mariadb  # last 50 lines
 
 ### Enter a container shell
@@ -103,7 +103,7 @@ Important: Always use `make` targets instead of calling `docker compose` directl
 
 ### Execute commands inside containers
 
-    docker exec wp-php wp user list --path=/var/www/html --allow-root
+    docker exec wordpress wp user list --path=/var/www/html --allow-root
     docker exec mariadb mysqladmin ping -u root -p"$(cat secrets/db_root_password.txt)"
     docker exec redis redis-cli ping
 
@@ -119,7 +119,7 @@ All containers are connected to a single bridge network (`inception-network`). O
 | Source | Destination | Protocol | Port |
 |---|---|---|---|
 | Host / Browser | NGINX | HTTPS | 443 |
-| NGINX | WordPress (wp-php) | FastCGI | 9000 |
+| NGINX | WordPress (wordpress) | FastCGI | 9000 |
 | NGINX | Adminer | FastCGI | 8080 |
 | NGINX | Grafana | HTTP proxy | 3000 |
 | NGINX | Prometheus | HTTP proxy | 9090 |
@@ -172,7 +172,7 @@ Check if the data directory has correct permissions: `ls -la /home/samatsum/data
 MariaDB may not be ready yet. WordPress retries via `wp db check` but if the loop times out, restart: `sudo make down && sudo make up`. Verify MariaDB is healthy: `docker exec mariadb mysqladmin ping -u root -p"$(cat secrets/db_root_password.txt)"`.
 
 **"502 Bad Gateway" from NGINX**
-The WordPress PHP-FPM container is not ready or has crashed. Check: `docker logs wp-php`. Ensure the `www.conf` listen directive matches the NGINX `fastcgi_pass` setting (`wp-php:9000`).
+The WordPress PHP-FPM container is not ready or has crashed. Check: `docker logs wordpress`. Ensure the `www.conf` listen directive matches the NGINX `fastcgi_pass` setting (`wordpress:9000`).
 
 **Certificate warning in browser**
 Expected behavior with self-signed certificates. Accept the warning to proceed.
@@ -210,7 +210,7 @@ Run this command to verify all requirements before defense:
     ls /home/samatsum/data/wordpress/ | head -5
     echo ""
     echo "=== WP Users ==="
-    docker exec wp-php wp user list --path=/var/www/html --allow-root
+    docker exec wordpress wp user list --path=/var/www/html --allow-root
     echo ""
     echo "=== Password in Dockerfiles ==="
     grep -ri "password" srcs/requirements/*/Dockerfile srcs/requirements/bonus/*/Dockerfile || echo "OK: none found"

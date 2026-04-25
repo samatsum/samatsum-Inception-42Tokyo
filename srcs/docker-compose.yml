@@ -1,30 +1,64 @@
+# ==============================================================================
+# 【 docker-compose.yml ディレクティブ（命令）の根本原理 】
+#
+# [サービス名]: (例: nginx:) docker-compose内での「論理的な役職名」。
+#             他のサービスから依存関係（depends_on）を指定される際の識別子になる。
+#
+# build     : 【設計図の指定】イメージをゼロから構築（ビルド）するための情報。
+#             指定したディレクトリのDockerfileを読み込み、OS環境やアプリを組み立てる。
+#
+# image     : 【金型の命名】ビルドして完成した静的な成果物（イメージ）に貼る製品ラベル。
+#             「image: nginx:inception」なら、nginxという名前にinceptionというタグを強制する。
+#
+# container_name: 【実体の命名】金型から生成され、メモリ上で稼働する動的プロセスへの命名。
+#                 仮想ネットワーク（DNS）上で、他のコンテナから通信する際の「ホスト名（宛先）」になる。
+#
+# depends_on: 【起動順序の制御】指定したサービスがネットワーク層に現れるのを待ってから起動する。
+#             ※デフォルトでは「プロセスの起動」しか見ないため、アプリの準備完了までは保証しない点に注意。
+#
+# ports     : 【L4レイヤーの窓口開通】ホストOSのNICとコンテナの仮想IPを繋ぐ設定。
+#             裏側ではLinuxカーネルの iptables を操作し、DNAT（宛先NAT）ルールを記述している。
+#
+# env_file  : 【環境変数の注入】指定ファイル内の変数を、コンテナ内で起動するプロセス群に渡す。
+#             ただし、パスワード等の機密情報はプロセスから丸見えになるため secrets を用いるのが堅牢。
+#
+# volumes   : 【データ層の永続化】揮発性のコンテナファイルシステムとは別に、データを安全に逃がす道。
+#             システムコール（write等）によるデータ書き込みを、ホストOSの物理ディスクに直接直結させる。
+#
+# restart   : 【プロセス可用性の担保】コンテナ内の主役プロセス（PID 1）が死んだ際の復帰ポリシー。
+#             unless-stopped は、明示的に停止されない限り、Dockerデーモンが何度でもプロセスを蘇生させる。
+#
+# networks  : 【L3ネットワークの隔離】コンテナを所属させる仮想スイッチ（ブリッジ）の指定。
+#             同じネットワークに属するコンテナ同士だけが、安全にコンテナ名（DNS）で通信できる。
+# ==============================================================================
 # このファイルは、複数の独立したプロセス（コンテナ）を同じネットワーク空間に配置し、
 # データ永続化層（ボリューム）と紐付ける「Infrastructure as Code (IaC)」の心臓部です。
 
 services:
 # nginx ------------------------------------------------------------
   nginx:
-   #image: ha hitsuyou nai???????
-    build: ./requirements/nginx/ #Dockerfile をビルドする
+    build: ./requirements/nginx/
+    image: nginx:inception
     container_name: nginx
     depends_on:
-      - wordpress #WordPress が起動してから動く
+      - wordpress
     # iptablesのNAT（Network Address Translation）ルールをホストOSに設定し、
     # ホストの物理NICの443番宛てのパケットを、このコンテナの仮想IPの443番へ転送する。
     ports:
-      - "443:443" #ホストの443番をコンテナの443番に繋ぐ
+      - "443:443" #ホストの443番(HTTPS（暗号化されたWeb通信）専用)をコンテナの443番に繋ぐ
     env_file:
-      - .env #DOMAIN_NAME などの変数を受け取る
+      - .env
     volumes:
-      - wordpress_data:/var/www/html/ #WordPress のファイルを共有する
+      - wordpress_data:/var/www/html/
     restart: unless-stopped
     networks:
-      inception: # 共通のネットワークに参加する
+      inception:
 
 # wordpress ------------------------------------------------------------
   wordpress:
     build: ./requirements/wordpress/.
-    container_name: wp-php
+    image: wordpress:inception
+    container_name: wordpress
     depends_on:
       - mariadb
     volumes:
@@ -42,6 +76,7 @@ services:
 # mariadb ------------------------------------------------------------
   mariadb:
     build: ./requirements/mariadb/.
+    image: mariadb:inception
     container_name: mariadb
     volumes:
       - mariadb_data:/var/lib/mysql
@@ -57,6 +92,7 @@ services:
 # adminer-bonus ------------------------------------------------------------
   adminer:
     build: ./requirements/bonus/adminer/.
+    image: adminer:inception-bonus
     container_name: adminer
     depends_on:
       - mariadb
@@ -67,6 +103,7 @@ services:
 # redis-bonus ------------------------------------------------------------
   redis:
     build: ./requirements/bonus/redis/.
+    image: redis:inception-bonus
     container_name: redis
     restart: unless-stopped
     networks:
@@ -75,6 +112,7 @@ services:
 # prometheus-bonus ------------------------------------------------------------
   prometheus:
     build: ./requirements/bonus/prometheus/.
+    image: prometheus:inception-bonus
     container_name: prometheus
     volumes:
       - prometheus_data:/prometheus
@@ -85,6 +123,7 @@ services:
 # static-site-bonus ------------------------------------------------------------
   static-site:
     build: ./requirements/bonus/static-site/.
+    image: static-site:inception-bonus
     container_name: static-site
     restart: unless-stopped
     networks:
@@ -93,9 +132,10 @@ services:
 # ftp-bonus ------------------------------------------------------------
   ftp:
     build: ./requirements/bonus/ftp/.
+    image: ftp:inception-bonus
     container_name: ftp
     ports:
-      - "21:21"
+      - "21:21" #FTP（ファイル転送制御）専用 
       - "21100-21110:21100-21110"
     volumes:
       - wordpress_data:/var/www/html
@@ -111,6 +151,7 @@ services:
 # grafana-bonus ------------------------------------------------------------
   grafana:
     build: ./requirements/bonus/grafana/.
+    image: grafana:inception-bonus
     container_name: grafana
     depends_on:
       - prometheus
@@ -161,3 +202,37 @@ volumes:
       device: /home/samatsum/data/prometheus
       o: bind
 
+# ==============================================================================
+# トラブルシューティングや設計の意図を明確にするためのレイヤー（階層）構造の整理。
+#
+# L7: アプリケーション層 (WordPress, MariaDB, Nginx, FTP)
+#     - 役割: HTTPレスポンスの返却、PHPの動的生成、SQLクエリの処理など、実際のアプリの動作。
+#     - 課題との関連: 502 Bad Gateway や DB接続エラー（認証失敗）などはこの層で調査する。
+#
+# L6: プレゼンテーション層 (TLSv1.2 / TLSv1.3)
+#     - 役割: データの暗号化・復号。
+#     - 課題との関連: NGINXでの自己署名証明書によるHTTPS通信の確立。
+#
+# L4: トランスポート層 (TCP, ポート番号: 443, 9000, 3306)
+#     - 役割: プログラム同士の通信窓口（ポート）の管理。
+#     - 課題との関連: NGINXのみを443番でホストに公開し、他は非公開にする（要件の「唯一のエントリーポイント」の遵守）。
+#                     Connection Refused エラーは、この層のポートが開いていない（プロセスが準備中）ことが原因。
+#
+# L3: ネットワーク層 (Docker Bridge Network, 内部DNS)
+#     - 役割: コンテナ間のルーティングと名前解決。
+#     - 課題との関連: docker-composeの `networks` により、`wordpress` や `mariadb` といった
+#                     コンテナ名（DNS名）だけで相互通信を可能にする。
+#
+# L2: データリンク層(仮想ブリッジドライバ)
+#     - 役割: 隣接する仮想NIC間のフレーム転送。Docker BridgeドライバがL2スイッチとして機能。
+#
+# L1: 物理層(仮想NIC)
+#     - 役割: 電気・光信号。Hypervisor（仮想マシンを作って動かすためのソフト）が仮想NICとしてエミュレート。
+#
+# ------------------------------------------------------------------------------
+# 【 デバッグの鉄則（Defense時の回答方針） 】
+# 「通信ができない」と言われたら、下から順に確認する。
+# 1. L3: `docker exec <コンテナ> ping <宛先>` で名前解決とIP到達性を確認。
+# 2. L4: ポートが開いているか、PID 1のプロセスが落ちていないか確認。
+# 3. L7: `docker logs` でアプリケーション内部のエラー（パスワード間違い等）を確認。
+# ==============================================================================

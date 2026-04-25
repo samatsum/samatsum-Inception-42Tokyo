@@ -43,6 +43,8 @@ logs:
 status:
 	@docker ps
 
+
+#コンテナ内で生成されたファイルとホストユーザーとの間で権限の不一致が起きるため、sudoでの実行を前提としている
 clean:
 	@$(COMPOSE) down -v --rmi all --remove-orphans 2>/dev/null || true
 	@rm -rf $(VOLUME)
