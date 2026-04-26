@@ -1,225 +1,46 @@
-# Developer Documentation — Inception
+# Developer Documentation - Inception Infrastructure
 
-This document explains how to set up the development environment from scratch, build and run the project, and manage containers and data.
+This document provides technical details on the infrastructure's architecture, implementation choices, and maintenance procedures for developers.
 
-## Prerequisites
+## 1. Technical Architecture & Service Map
 
-The following must be installed on the virtual machine:
+The infrastructure follows a strict microservices approach, ensuring each service runs in an isolated container with its own lifecycle.
 
-| Tool | Version | Purpose |
-|---|---|---|
-| Docker | 20.10+ | Container runtime |
-| Docker Compose | v2 | Service orchestration |
-| make | any | Build automation |
-| git | any | Version control |
+### Core Services
+* **NGINX**: Acts as the L7 entry point and reverse proxy. It handles TLS v1.2/v1.3 termination and routes traffic to WordPress, Adminer, Static-Site, and Grafana via URL paths.
+* **WordPress**: Runs PHP-FPM 8.2 to process application logic. It depends on MariaDB and connects via internal Docker DNS.
+* **MariaDB**: The relational database. It is configured to accept connections only from within the internal bridge network.
 
-To install on Ubuntu:
+### Bonus Services
+* **Redis**: In-memory cache for WordPress to reduce DB read time complexity to O(1).
+* **Adminer**: GUI for MariaDB management.
+* **Prometheus**: Time-series database (TSDB) for metrics collection.
+* **Grafana**: Dashboard for Prometheus data visualization.
+* **Static-Site**: Python/Flask based stateless web application.
+* **FTP Server**: `vsftpd` for direct file manipulation on the WordPress volume.
 
-    sudo apt update
-    sudo apt install -y docker.io docker-compose-v2 make git
-    sudo systemctl enable docker
-    sudo systemctl start docker
+## 2. Implementation Details
 
-To allow your user to run Docker without `sudo`:
+### PID 1 and Signal Handling
+To ensure graceful shutdowns (exit code 0), all entrypoint scripts utilize the `exec` command to replace the shell process with the service daemon. This allows the daemon to receive SIGTERM directly from the Docker engine.
 
-    sudo usermod -aG docker $USER
+### Initialization Idempotency
+Service scripts verify the current state before initializing:
+* **MariaDB**: Checks if `/var/lib/mysql/mysql` exists before running `mysql_install_db`.
+* **WordPress**: Checks for `wp-config.php` before executing setup commands.
 
-Log out and back in for the group change to take effect.
+### Race Condition Handling
+The WordPress initialization script performs a L7 health check on MariaDB using `wp db check` in a retry loop. This ensures the database is fully ready to accept queries before WordPress attempts installation.
 
-## Building the Environment from Scratch
+## 3. Storage & Persistence
 
-### 1. Clone the Repository
+We use **Docker Named Volumes** mapped to specific host paths to comply with the subject requirements:
+* **Database**: `/home/samatsum/data/mariadb`
+* **WordPress**: `/home/samatsum/data/wordpress`
 
-    git clone <repository-url>
-    cd samatsum-Inception-42Tokyo
+The `Makefile` ensures these directories exist with correct permissions (`755`) before the containers start, preventing Docker from auto-creating them as root-owned directories.
 
-### 2. Configure the Domain
+## 4. Security
 
-    echo "127.0.0.1 samatsum.42.fr" | sudo tee -a /etc/hosts
-
-### 3. Create the Environment File
-
-Create `srcs/.env` with the following content:
-
-    DOMAIN_NAME=samatsum.42.fr
-    MYSQL_DATABASE=wordpress
-    MYSQL_USER=wpuser
-    WP_TITLE=inception
-    WP_ADMIN_USER=supervisor
-    WP_ADMIN_EMAIL=zunandkun@gmail.com
-    WP_NORMAL_USER=viewer
-    WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
-
-Important: `WP_ADMIN_EMAIL` and `WP_NORMAL_EMAIL` must be different addresses. The admin username must not contain "admin" or "administrator" (subject requirement).
-
-### 4. Create the Secrets Files
-
-    mkdir -p secrets
-    echo "your_db_password" > secrets/db_password.txt
-    echo "your_db_root_password" > secrets/db_root_password.txt
-    echo "your_wp_admin_password" > secrets/credentials.txt
-    echo "your_wp_normal_password" > secrets/wp_normal_password.txt
-    echo "your_ftp_password" > secrets/ftp_password.txt
-
-These files are excluded from Git via `.gitignore`. Never commit them.
-
-### 5. Build and Start
-
-    sudo make up
-
-This creates host data directories, builds all Docker images, and starts all containers.
-
-## Makefile Targets
-
-| Target | What it does |
-|---|---|
-| `make up` | `mkdir -p` for data dirs, then `docker compose up --build` |
-| `make down` | `docker compose down` (removes containers, keeps volumes) |
-| `make stop` | `docker compose stop` (stops without removing) |
-| `make start` | `docker compose start` (restarts stopped containers) |
-| `make logs` | `docker compose logs -f` (follow all logs) |
-| `make status` | `docker ps` |
-| `make clean` | `docker compose down -v --rmi all --remove-orphans` + delete host data |
-| `make fclean` | `clean` + `docker system prune -af` |
-| `make re` | `fclean` + `up` |
-
-Important: Always use `make` targets instead of calling `docker compose` directly. The Makefile's `up` target creates host data directories (`/home/samatsum/data/{mariadb,wordpress,prometheus}`) that are required for volume mounts. Skipping this step causes mount failures.
-
-## Container Management
-
-### View running containers
-
-    docker ps -a
-
-### View logs for a specific container
-
-    docker logs <container-name>
-    docker logs -f wordpress          # follow WordPress logs
-    docker logs --tail 50 mariadb  # last 50 lines
-
-### Enter a container shell
-
-    docker exec -it <container-name> bash
-
-### Execute commands inside containers
-
-    docker exec wordpress wp user list --path=/var/www/html --allow-root
-    docker exec mariadb mysqladmin ping -u root -p"$(cat secrets/db_root_password.txt)"
-    docker exec redis redis-cli ping
-
-### Manage volumes
-
-    docker volume ls                    # list all volumes
-    docker volume inspect mariadb       # inspect a specific volume
-
-## Network Architecture
-
-All containers are connected to a single bridge network (`inception-network`). Only NGINX exposes a port to the host.
-
-| Source | Destination | Protocol | Port |
-|---|---|---|---|
-| Host / Browser | NGINX | HTTPS | 443 |
-| NGINX | WordPress (wordpress) | FastCGI | 9000 |
-| NGINX | Adminer | FastCGI | 8080 |
-| NGINX | Grafana | HTTP proxy | 3000 |
-| NGINX | Prometheus | HTTP proxy | 9090 |
-| NGINX | Static Site | HTTP proxy | 5000 |
-| WordPress | MariaDB | MySQL | 3306 |
-| WordPress | Redis | Redis | 6379 |
-| Grafana | Prometheus | HTTP | 9090 |
-| Host | FTP (ftp) | FTP | 21, 21100-21110 |
-
-Container names are used as hostnames (Docker's embedded DNS resolves them within the bridge network).
-
-## Data Storage and Persistence
-
-### Named Volumes
-
-| Volume Name | Container Mount | Host Path | Purpose |
-|---|---|---|---|
-| `mariadb` | `/var/lib/mysql` | `/home/samatsum/data/mariadb` | Database files |
-| `wordpress` | `/var/www/html` | `/home/samatsum/data/wordpress` | WordPress site files |
-| `prometheus` | `/prometheus` | `/home/samatsum/data/prometheus` | Metrics time-series data |
-
-Volumes use the `local` driver with `type: none` and `o: bind` to map Docker-managed named volumes to specific host directories. This satisfies both the named volume requirement and the host path requirement.
-
-### Persistence Behavior
-
-| Action | Containers | Volumes/Data | Next startup |
-|---|---|---|---|
-| `make down` | Removed | Preserved | Reuses existing data |
-| `make stop` | Stopped | Preserved | Resumes from stopped state |
-| `make clean` | Removed | Deleted | Fresh initialization |
-| `make fclean` | Removed | Deleted + prune | Fresh initialization |
-| Container crash | Auto-restarts | Preserved | Automatic (`restart: unless-stopped`) |
-
-### Initialization Flow
-
-**MariaDB** (`srcs/requirements/mariadb/tools/script.sh`):
-First run: `mysql_install_db` → start temporary instance → create database, user, grant privileges → shutdown → start foreground with `exec mysqld_safe`.
-Subsequent runs: Skip initialization (checks for `/var/lib/mysql/mysql`), start directly.
-
-**WordPress** (`srcs/requirements/wordpress/tools/script.sh`):
-First run: Download wp-cli → download WordPress core → create `wp-config.php` (with `--skip-check`) → wait for MariaDB (`wp db check` loop) → install WordPress → create users → configure Redis → start PHP-FPM.
-Subsequent runs: Skip download/install steps, start PHP-FPM directly.
-
-## Troubleshooting
-
-**MariaDB fails to start / "Can't connect to MySQL server"**
-Check if the data directory has correct permissions: `ls -la /home/samatsum/data/mariadb/`. The MariaDB entrypoint runs as root. If the directory is empty, MariaDB will initialize on next start. If corrupted, run `sudo make re` for a clean rebuild.
-
-**WordPress shows "Error establishing a database connection"**
-MariaDB may not be ready yet. WordPress retries via `wp db check` but if the loop times out, restart: `sudo make down && sudo make up`. Verify MariaDB is healthy: `docker exec mariadb mysqladmin ping -u root -p"$(cat secrets/db_root_password.txt)"`.
-
-**"502 Bad Gateway" from NGINX**
-The WordPress PHP-FPM container is not ready or has crashed. Check: `docker logs wordpress`. Ensure the `www.conf` listen directive matches the NGINX `fastcgi_pass` setting (`wordpress:9000`).
-
-**Certificate warning in browser**
-Expected behavior with self-signed certificates. Accept the warning to proceed.
-
-**Port 443 already in use**
-Another service (e.g., Apache2) may be using port 443. Check: `sudo lsof -i :443`. If Apache2 is running: `sudo systemctl stop apache2 && sudo systemctl disable apache2`.
-
-**Volumes not mounting / "no such file or directory"**
-Host data directories may not exist. Always use `make up` (which runs `mkdir -p`), not `docker compose up` directly.
-
-**Grafana shows "%(domain)s" literally in URLs**
-Grafana 12.x broke the `%(variable)` syntax in `grafana.ini`. The domain must be hardcoded directly (already fixed in this project).
-
-## Pre-Defense Verification
-
-Run this command to verify all requirements before defense:
-
-    echo "=== Container Status ==="
-    docker ps -a
-    echo ""
-    echo "=== Port Exposure ==="
-    docker ps --format "{{.Names}}: {{.Ports}}"
-    echo ""
-    echo "=== TLS Version ==="
-    curl -vk https://samatsum.42.fr 2>&1 | grep -i "tls\|ssl" | head -5
-    echo ""
-    echo "=== Network ==="
-    docker network inspect inception-network --format '{{range .Containers}}{{.Name}} {{end}}'
-    echo ""
-    echo "=== Volumes ==="
-    docker volume ls
-    echo ""
-    echo "=== Host Data ==="
-    ls /home/samatsum/data/mariadb/ | head -5
-    ls /home/samatsum/data/wordpress/ | head -5
-    echo ""
-    echo "=== WP Users ==="
-    docker exec wordpress wp user list --path=/var/www/html --allow-root
-    echo ""
-    echo "=== Password in Dockerfiles ==="
-    grep -ri "password" srcs/requirements/*/Dockerfile srcs/requirements/bonus/*/Dockerfile || echo "OK: none found"
-    echo ""
-    echo "=== Latest Tag ==="
-    grep -r "latest" srcs/requirements/*/Dockerfile srcs/requirements/bonus/*/Dockerfile || echo "OK: none found"
-    echo ""
-    echo "=== Hack Commands ==="
-    grep -rE "tail -f|sleep infinity|while true" srcs/requirements/*/tools/script.sh srcs/requirements/bonus/*/tools/script.sh || echo "OK: none found"
-    echo ""
-    echo "=== Forbidden Network Config ==="
-    grep -E "network.*host|links:" srcs/docker-compose.yml || echo "OK: none found"
+* **Secrets**: All passwords (DB, WP Admin, FTP) are managed via Docker Secrets and mounted as read-only files in `/run/secrets/`.
+* **Log Protection**: Shell scripts use `set +x` before expanding secret variables to prevent passwords from leaking into stderr/stdout logs during debug sessions.
