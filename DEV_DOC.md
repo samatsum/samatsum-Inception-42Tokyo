@@ -1,46 +1,30 @@
 # Developer Documentation - Inception Infrastructure
 
-This document provides technical details on the infrastructure's architecture, implementation choices, and maintenance procedures for developers.
+This document provides technical details on the infrastructure's architecture and maintenance.
 
 ## 1. Technical Architecture & Service Map
+The infrastructure follows a strict microservices approach.
+- **NGINX**: L7 entry point, TLS v1.2/v1.3 termination.
+- **WordPress**: Runs PHP-FPM 8.2.
+- **MariaDB**: Relational database.
 
-The infrastructure follows a strict microservices approach, ensuring each service runs in an isolated container with its own lifecycle.
+## 2. Environment Setup (From Scratch)
+1. **Host Configuration**: Map the domain name specified in `.env` to `127.0.0.1` in `/etc/hosts`.
+2. **Environment Variables**: Create `srcs/.env` and define variables: `DOMAIN_NAME`, `MYSQL_DATABASE`, `MYSQL_USER`, `WP_ADMIN_USER`, etc.
+3. **Secrets**: Create a `secrets/` folder at the root and provide the following files: `credentials.txt`, `db_password.txt`, `db_root_password.txt`, `ftp_password.txt`, `wp_normal_password.txt`.
 
-### Core Services
-* **NGINX**: Acts as the L7 entry point and reverse proxy. It handles TLS v1.2/v1.3 termination and routes traffic to WordPress, Adminer, Static-Site, and Grafana via URL paths.
-* **WordPress**: Runs PHP-FPM 8.2 to process application logic. It depends on MariaDB and connects via internal Docker DNS.
-* **MariaDB**: The relational database. It is configured to accept connections only from within the internal bridge network.
+## 3. Management Commands
+- `make up`: Build and launch the infrastructure.
+- `make status`: Check container health.
+- `make logs`: View service logs.
+- `make fclean`: Perform a deep clean of all Docker resources.
 
-### Bonus Services
-* **Redis**: In-memory cache for WordPress to reduce DB read time complexity to O(1).
-* **Adminer**: GUI for MariaDB management.
-* **Prometheus**: Time-series database (TSDB) for metrics collection.
-* **Grafana**: Dashboard for Prometheus data visualization.
-* **Static-Site**: Python/Flask based stateless web application.
-* **FTP Server**: `vsftpd` for direct file manipulation on the WordPress volume.
+## 4. Storage & Persistence
+We use Docker Named Volumes mapped to specific host paths:
+- **Database**: `/home/${USER}/data/mariadb`
+- **WordPress**: `/home/${USER}/data/wordpress`
+- **Prometheus**: `/home/${USER}/data/prometheus`
 
-## 2. Implementation Details
-
-### PID 1 and Signal Handling
-To ensure graceful shutdowns (exit code 0), all entrypoint scripts utilize the `exec` command to replace the shell process with the service daemon. This allows the daemon to receive SIGTERM directly from the Docker engine.
-
-### Initialization Idempotency
-Service scripts verify the current state before initializing:
-* **MariaDB**: Checks if `/var/lib/mysql/mysql` exists before running `mysql_install_db`.
-* **WordPress**: Checks for `wp-config.php` before executing setup commands.
-
-### Race Condition Handling
-The WordPress initialization script performs a L7 health check on MariaDB using `wp db check` in a retry loop. This ensures the database is fully ready to accept queries before WordPress attempts installation.
-
-## 3. Storage & Persistence
-
-We use **Docker Named Volumes** mapped to specific host paths to comply with the subject requirements:
-* **Database**: `/home/samatsum/data/mariadb`
-* **WordPress**: `/home/samatsum/data/wordpress`
-
-The `Makefile` ensures these directories exist with correct permissions (`755`) before the containers start, preventing Docker from auto-creating them as root-owned directories.
-
-## 4. Security
-
-* **Secrets**: All passwords (DB, WP Admin, FTP) are managed via Docker Secrets and mounted as read-only files in `/run/secrets/`.
-* **Log Protection**: Shell scripts use `set +x` before expanding secret variables to prevent passwords from leaking into stderr/stdout logs during debug sessions.
+## 5. Security Implementation
+- **Secrets**: Passwords are managed via Docker Secrets and mounted as read-only files in `/run/secrets/`.
+- **Process Management**: Entrypoint scripts utilize `exec` to ensure the service daemon becomes PID 1 and handles SIGTERM correctly.

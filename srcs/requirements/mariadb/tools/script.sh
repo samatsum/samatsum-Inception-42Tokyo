@@ -6,6 +6,7 @@
 set +x
 MYSQL_ROOT_PASSWORD=$(cat /run/secrets/db_root_password)
 MYSQL_PASSWORD=$(cat /run/secrets/db_password)
+set -x
 
 # 初回のみDB初期化
 if [ ! -d "/var/lib/mysql/mysql" ]; then
@@ -27,6 +28,7 @@ if [ ! -d "/var/lib/mysql/mysql" ]; then
     done
 
 
+set +x
 # DBの作成、ユーザーの作成、権限の付与を行う。
     mysql -u root <<EOF
 ALTER USER 'root'@'localhost' IDENTIFIED BY '${MYSQL_ROOT_PASSWORD}';
@@ -35,7 +37,7 @@ CREATE USER IF NOT EXISTS '${MYSQL_USER}'@'%' IDENTIFIED BY '${MYSQL_PASSWORD}';
 GRANT ALL PRIVILEGES ON ${MYSQL_DATABASE}.* TO '${MYSQL_USER}'@'%';
 FLUSH PRIVILEGES;
 EOF
-
+set -x
     # 裏側で動いているMariaDBを正規の手段でシャットダウン
     mysqladmin -u root -p"${MYSQL_ROOT_PASSWORD}" shutdown
     sleep 2
