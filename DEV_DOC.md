@@ -25,16 +25,21 @@ To ensure idempotency and eliminate manual copy-pasting errors, generate the `.e
 mkdir -p srcs
 
 cat << 'EOF' > srcs/.env
+# .env
 DOMAIN_NAME=samatsum.42.fr
+# MYSQL
 MYSQL_DATABASE=wordpress
 MYSQL_USER=wpuser
-# Note: Passwords are NOT defined here for security reasons.
-# They are managed via Docker Secrets (see section 1.4).
-WP_ADMIN_USER=boss42
-WP_ADMIN_EMAIL=admin@samatsum.42.fr
-WP_NORMAL_USER=normaluser
-WP_NORMAL_EMAIL=user@samatsum.42.fr
-WP_TITLE=Inception_42Tokyo
+# WordPress
+WP_TITLE=inception
+## admin
+WP_ADMIN_USER=supervisor
+WP_ADMIN_EMAIL=zunandkun@gmail.com
+## viewer
+WP_NORMAL_USER=viewer
+WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
+## FTPServer
+FTP_USER=ftpuser
 EOF
 
 chmod 600 srcs/.env

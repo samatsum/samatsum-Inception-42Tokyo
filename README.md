@@ -88,7 +88,10 @@ Bind mounts depend on specific host paths, leading to fragile portability. We us
 
 ## Resources
 - [Official Docker Documentation](https://docs.docker.com/)
-- **AI Usage:** AI was utilized as a technical mentor to audit infrastructure architecture, optimize PID 1 signal propagation, and ensure strict fail-fast implementation within bash scripts. All logic was manually verified and tested.
+- **AI Usage:** 
+In this project, AI was used as a pair-programming navigator.
+
+AI was utilized as a technical mentor to audit infrastructure architecture, optimize PID 1 signal propagation, and ensure strict fail-fast implementation within bash scripts. All logic was manually verified and tested.
 
 ---
 
@@ -112,16 +115,21 @@ Map the domain to the local loopback address.
 Create `srcs/.env` with the following variables:
 ```env
 cat << 'EOF' > srcs/.env
+# .env
 DOMAIN_NAME=samatsum.42.fr
+# MYSQL
 MYSQL_DATABASE=wordpress
 MYSQL_USER=wpuser
-MYSQL_PASSWORD=db_pass_here
-MYSQL_ROOT_PASSWORD=root_pass_here
-WP_ADMIN_USER=boss42
-WP_ADMIN_EMAIL=admin@samatsum.42.fr
-WP_NORMAL_USER=normaluser
-WP_NORMAL_EMAIL=user@samatsum.42.fr
-WP_TITLE=Inception_42Tokyo
+# WordPress
+WP_TITLE=inception
+## admin
+WP_ADMIN_USER=supervisor
+WP_ADMIN_EMAIL=zunandkun@gmail.com
+## viewer
+WP_NORMAL_USER=viewer
+WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
+## FTPServer
+FTP_USER=ftpuser
 EOF
 ```
 
