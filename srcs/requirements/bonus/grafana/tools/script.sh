@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 
 # Prometheusデータソースを追加
 cat << EOF > /etc/grafana/provisioning/datasources/prometheus.yaml

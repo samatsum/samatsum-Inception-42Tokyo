@@ -1,5 +1,7 @@
 #!/bin/bash
 
+set -uo pipefail
+
 exec /usr/local/bin/prometheus \
         --config.file=/etc/prometheus/prometheus.yml \
         --storage.tsdb.path=/prometheus \

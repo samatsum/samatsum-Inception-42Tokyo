@@ -39,5 +39,9 @@ RUN chmod +x /script.sh
 
 EXPOSE 21 21100-21110
 
-# CMD ["/script.sh"]
-ENTRYPOINT ["/script.sh"]
+#シグナルを正しく受け取り、子プロセスに転送（フォワード）する機能を持つ極小のinitプロセス
+#（tini または dumb-init）を挟むことで、グレースフルシャットダウンを実現
+RUN apt-get update && apt-get install -y tini && rm -rf /var/lib/apt/lists/*
+
+#tini 経由でスクリプトを起動
+ENTRYPOINT ["/usr/bin/tini", "--", "/script.sh"]

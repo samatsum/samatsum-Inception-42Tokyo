@@ -1,4 +1,5 @@
 #!/bin/bash
+set -uo pipefail
 
 set +x
 FTP_USER=${FTP_USER:-ftpuser}

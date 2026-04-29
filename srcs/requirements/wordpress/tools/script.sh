@@ -1,5 +1,9 @@
 #!/bin/bash
 
+#-u: 未定義の変数を参照した際にエラーとして扱います。
+#-o pipefail: パイプライン（A | B）の途中のコマンドが失敗した場合も、パイプ全体の失敗として検知します。
+set -uo pipefail
+
 WP_PATH="/var/www/html"
 
 # secretsからパスワードを読み込む
