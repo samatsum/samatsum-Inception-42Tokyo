@@ -29,7 +29,7 @@ if [ ! -f "${WP_PATH}/wp-config.php" ]; then
         --dbname=${MYSQL_DATABASE} \
         --dbuser=${MYSQL_USER} \
         --dbpass=${MYSQL_PASSWORD} \
-        --dbhost=mariadb \
+        --dbhost=mariadb:3306 \
         --skip-check \
         --allow-root
 
