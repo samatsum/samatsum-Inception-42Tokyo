@@ -1,4 +1,0 @@
-DRIVER    VOLUME NAME
-local     mariadb
-local     prometheus
-local     wordpress
