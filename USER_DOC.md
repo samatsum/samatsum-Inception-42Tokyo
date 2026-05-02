@@ -91,5 +91,6 @@ make logs
 ### 5.3 Verify SSL/TLS
 You can verify that NGINX is correctly serving over HTTPS using `curl`:
 ```bash
+## HTTPレスポンスヘッダーの取得（-I）
 curl -I https://samatsum.42.fr
 ```
