@@ -34,7 +34,6 @@ RUN apt update && apt upgrade -y && apt install -y \
     openssl \
     gettext-base
 
-#NGINXはデフォルトで、物理的なファイル（/var/log/nginx/access.log）にログを直接書き込もうとします。
 RUN ln -sf /dev/stdout /var/log/nginx/access.log \
     && ln -sf /dev/stderr /var/log/nginx/error.log
 

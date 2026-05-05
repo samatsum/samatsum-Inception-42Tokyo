@@ -20,25 +20,26 @@ if [ ! -f "/usr/local/bin/wp" ]; then
     mv wp-cli.phar /usr/local/bin/wp
 fi
 
-# WordPressファイルがなければダウンロード
-if [ ! -f "${WP_PATH}/wp-config.php" ]; then
-    wp core download --path=${WP_PATH} --allow-root
+rm -f ${WP_PATH}/wp-config.php
 
-    wp config create \
-        --path=${WP_PATH} \
-        --dbname=${MYSQL_DATABASE} \
-        --dbuser=${MYSQL_USER} \
-        --dbpass=${MYSQL_PASSWORD} \
-        --dbhost=mariadb:3306 \
-        --skip-check \
-        --allow-root
+wp config create \
+    --path=${WP_PATH} \
+    --dbname=${MYSQL_DATABASE} \
+    --dbuser=${MYSQL_USER} \
+    --dbpass=${MYSQL_PASSWORD} \
+    --dbhost=mariadb:3306 \
+    --skip-check \
+    --allow-root
 
-fi
+# wp-config.phpを作り直したため、Redisの環境変数も毎回必ず再適用する
+wp config set WP_CACHE_KEY_SALT ${DOMAIN_NAME} --path=${WP_PATH} --allow-root
+wp config set WP_REDIS_HOST redis --path=${WP_PATH} --allow-root
+wp config set WP_REDIS_PORT 6379 --path=${WP_PATH} --allow-root
 
 # DB接続を待つ(状態の同期（競合状態の防止）)
 # WordPress側から「DBに接続できるか？」を確認（ポーリング）
 # 2秒 × 60回 = 120秒（2分）のタイムアウト
-MAX_TRIES=60
+MAX_TRIES=120
 TRIES=0
 
 until wp db check --path=${WP_PATH} --allow-root 2>/dev/null; do
@@ -47,7 +48,7 @@ until wp db check --path=${WP_PATH} --allow-root 2>/dev/null; do
         exit 1 # ここで異常終了させ、Dockerデーモンに再起動を任せる
     fi
     echo "Waiting for MariaDB... ($TRIES/$MAX_TRIES)"
-    sleep 2
+    sleep 1
     TRIES=$((TRIES+1))
 done
 
