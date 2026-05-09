@@ -20,6 +20,11 @@ if [ ! -f "/usr/local/bin/wp" ]; then
     mv wp-cli.phar /usr/local/bin/wp
 fi
 
+# 【追加】WordPressコアファイルが存在しない場合のみダウンロード
+if [ ! -f "${WP_PATH}/wp-includes/version.php" ]; then
+    wp core download --path=${WP_PATH} --allow-root
+fi
+
 rm -f ${WP_PATH}/wp-config.php
 
 wp config create \

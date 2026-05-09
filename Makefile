@@ -64,9 +64,26 @@ clean:
 	@rm -rf $(VOLUME)
 
 fclean: clean
-	@docker system prune -af 2>/dev/null || true
-	@rm -rf $(VOLUME)
+	@sudo docker system prune -af --volumes 2>/dev/null || true
+	@sudo docker volume rm mariadb wordpress prometheus 2>/dev/null || true
+	@sudo rm -rf $(VOLUME)
 
 re: fclean up
 
 .PHONY: all up down stop start logs status clean fclean re
+
+# # 1. コンテナの完全停止（異常終了したネットワーク等の破棄）
+# sudo docker compose -f srcs/docker-compose.yml down -v
+
+# # 2. 【最重要】ゴーストボリュームの「名指し」強制削除
+# # （docker system pruneでは保護されて消えないため、直接指定して破壊）
+# sudo docker volume rm mariadb wordpress prometheus
+
+# # 3. ホスト側の物理データの完全消去（物理層のリセット）
+# sudo rm -rf /home/samatsum/data
+
+# # 4. Dockerデーモンの再起動（Snap特有の権限ロックとキャッシュのクリア）
+# sudo snap restart docker
+
+# # 5. 環境の一から再構築
+# sudo make up
