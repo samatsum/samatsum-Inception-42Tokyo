@@ -5,6 +5,7 @@ global:
 scrape_configs:
   # Prometheus自身を監視する
   - job_name: 'prometheus'
-    metrics_path: '/metrics'
+    # メトリクスの取得先を新しい空間（/prometheus/metrics）に変更する
+    metrics_path: '/prometheus/metrics'
     static_configs:
       - targets: ['localhost:9090']

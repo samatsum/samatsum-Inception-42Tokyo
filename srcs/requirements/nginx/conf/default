@@ -78,8 +78,7 @@ server {
     # ========================================================
     # 監視ツール (Grafana/Prometheus) への振り分け
     # proxy_pass(リクエストをそのまま別のWebサーバーへ横流しする設定)
-	location /prometheus/ {#Prometheus（データ収集係）
-		# prometheus自体がWebサーバーとして動いているため、リクエストを転送します。
+    location /prometheus {
         proxy_set_header Host $http_host;
         proxy_pass http://prometheus:9090;
     }
