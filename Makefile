@@ -58,19 +58,37 @@ status:
 	@docker container ls -a
 
 
-#コンテナ内で生成されたファイルとホストユーザーとの間で権限の不一致が起きるため、sudoでの実行を前提としている
-clean:
-	@$(COMPOSE) down -v --rmi all --remove-orphans 2>/dev/null || true
-	@rm -rf $(VOLUME)
+# ==============================================================================
+# Clean Targets
+# ==============================================================================
 
+# [clean] プロジェクト固有のコンテナ、イメージ、ネットワーク、ボリュームを安全に削除
+# ※ ホスト側の永続データ（$(VOLUME)）は残す。
+clean:
+	@echo "Cleaning project resources..."
+	@sudo $(COMPOSE) down -v --rmi all --remove-orphans 2>/dev/null || true
+
+# [fclean] cleanに加えて、ホスト側の永続データ削除とシステム全体のガベージコレクション
+# 空間計算量を最小化し、冪等性を担保する。
 fclean: clean
+	@echo "Deep cleaning (removing host data and pruning)..."
 	@sudo docker system prune -af --volumes 2>/dev/null || true
 	@sudo docker volume rm mariadb wordpress prometheus 2>/dev/null || true
 	@sudo rm -rf $(VOLUME)
 
+# [emergency] デッドロック時の強制リセット（最終手段）
+# ※ 警告: 他のプロジェクトのコンテナも全て巻き込んで強制終了します。
+emergency:
+	@echo "EMERGENCY RESET: Forcefully killing all containers and restarting Docker daemon..."
+	@sudo docker stop $$(sudo docker ps -qa) 2>/dev/null || true
+	@sudo docker rm -f $$(sudo docker ps -qa) 2>/dev/null || true
+	@sudo snap restart docker || sudo systemctl restart docker
+	@sudo docker system prune -af --volumes 2>/dev/null || true
+	@sudo rm -rf $(VOLUME)
+
 re: fclean up
 
-.PHONY: all up down stop start logs status clean fclean re
+.PHONY: all up down stop start logs status clean fclean emergency re
 
 # # 1. コンテナの完全停止（異常終了したネットワーク等の破棄）
 # sudo docker compose -f srcs/docker-compose.yml down -v

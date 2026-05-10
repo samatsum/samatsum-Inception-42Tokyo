@@ -42,7 +42,7 @@ WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
 FTP_USER=ftpuser
 EOF
 
-chmod 600 srcs/.env
+chmod 400 srcs/.env
 ```
 
 ### 1.4 Secrets Management
@@ -57,7 +57,7 @@ echo -n "wp_admin_pass_here" > secrets/credentials.txt
 echo -n "wp_normal_pass_here" > secrets/wp_normal_password.txt
 echo -n "ftp_pass_here" > secrets/ftp_password.txt
 
-chmod 600 secrets/*.txt
+chmod 400 secrets/*.txt
 ```
 
 ---
