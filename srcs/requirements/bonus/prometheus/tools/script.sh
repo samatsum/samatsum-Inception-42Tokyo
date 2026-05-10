@@ -7,3 +7,4 @@ exec /usr/local/bin/prometheus \
         --storage.tsdb.path=/prometheus \
         --web.console.libraries=/etc/prometheus/console_libraries \
         --web.console.templates=/etc/prometheus/consoles
+        --web.external-url=/prometheus/

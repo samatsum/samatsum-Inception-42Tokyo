@@ -81,7 +81,7 @@ server {
 	location /prometheus/ {#Prometheus（データ収集係）
 		# prometheus自体がWebサーバーとして動いているため、リクエストを転送します。
         proxy_set_header Host $http_host;
-        proxy_pass http://prometheus:9090/;
+        proxy_pass http://prometheus:9090;
     }
     location /grafana/ {#Grafana（データ可視化係）
         # Grafana自体がWebサーバーとして動いているため、リクエストを転送します。
@@ -92,6 +92,7 @@ server {
     location /site/ {
         # Flaskも独自のWebサーバー機能を持つため、プロキシとして中継します。
         proxy_set_header Host $http_host;
+        #Flaskサーバーは「ルートディレクトリ（/）へのアクセスが来たら、HTMLを返す」という設定で待ち受けています
         proxy_pass http://static-site:5000/;
     }
 }

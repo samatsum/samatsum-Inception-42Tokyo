@@ -79,12 +79,16 @@ fclean: clean
 # [emergency] デッドロック時の強制リセット（最終手段）
 # ※ 警告: 他のプロジェクトのコンテナも全て巻き込んで強制終了します。
 emergency:
-	@echo "EMERGENCY RESET: Forcefully killing all containers and restarting Docker daemon..."
-	@sudo docker stop $$(sudo docker ps -qa) 2>/dev/null || true
-	@sudo docker rm -f $$(sudo docker ps -qa) 2>/dev/null || true
+	@echo "EMERGENCY RESET: Phase 1 - Restarting Docker daemon..."
 	@sudo snap restart docker || sudo systemctl restart docker
+	@echo "Phase 2 - Waiting for daemon to be ready..."
+	@sleep 2 # デーモンがソケットをオープンするまでの猶予
+	@echo "Phase 3 - Forcefully removing all containers and cleaning system..."
+	@sudo docker rm -f $$(sudo docker ps -qa) 2>/dev/null || true
 	@sudo docker system prune -af --volumes 2>/dev/null || true
+	@echo "Phase 4 - Deleting host physical data..."
 	@sudo rm -rf $(VOLUME)
+	@echo "Reset complete."
 
 re: fclean up
 
