@@ -64,19 +64,22 @@ chmod 400 secrets/*.txt
 
 ## 2. Build and Launch
 
-### 2.1 Makefile Targets
+### Makefile Targets (Operation Commands)
 
-The `Makefile` at the root directory abstracts Docker Compose commands for operational efficiency.
+The `Makefile` at the root directory abstracts complex Docker Compose commands, ensuring idempotent operations and precise state management.
 
-| Target | Description |
-|--------|-------------|
-| `make up` | Build images (if needed) and start all containers. |
-| `make build` | Force rebuild of Docker images without using cache. |
-| `make down` | Stop containers and remove the network. |
-| `make stop` | Stop containers cleanly without destroying the network. |
-| `make start` | Start stopped containers. |
-| `make logs` | Track stdout/stderr of all containers. |
-| `make fclean`| Deep clean: removes containers, images, networks, and data volumes. |
+| Target | Description | Data Layer Status |
+|--------|-------------|-------------------|
+| `make up` | Builds images, ensures proper host directory permissions, and starts all containers. | Preserved / Created |
+| `make down` | Stops containers and destroys the L3 virtual network (`inception-network`). | Preserved |
+| `make stop` | Gracefully stops PID 1 processes (SIGTERM) while keeping the filesystem and network intact. | Preserved |
+| `make start` | Wakes up containers from the `stop` state. | Preserved |
+| `make logs` | Tracks `stdout`/`stderr` of all containers for debugging. | - |
+| `make status` | Lists all containers and their current state. | - |
+| `make clean` | Removes project containers, images, and Docker-managed volumes. | **Host Data Preserved** |
+| `make fclean`| `clean` + completely wipes physical host data (`/home/samatsum/data`) and prunes the system. | **Destroyed** |
+| `make emergency`| **[CAUTION]** Ultimate reset. Force-kills all containers globally, restarts Docker daemon, and wipes data. Used for deadlocks. | **Destroyed** |
+| `make re` | Deep clean and restart from scratch (`fclean` -> `up`). | **Recreated** |
 
 ### 2.2 First Launch
 Navigate to the root directory and execute:

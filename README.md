@@ -47,26 +47,22 @@ Browser --[HTTPS]--> NGINX --[FastCGI]--> PHP-FPM --[SQL]--> MariaDB
 - `.env` file is prepared in `srcs/.env`.
 - Secrets files are prepared in `secrets/` directory.
 
-### Build and Run
+### Makefile Targets (Operation Commands)
 
-Execute the following command from the root directory:
-```bash
-make up
-```
+The `Makefile` at the root directory abstracts complex Docker Compose commands, ensuring idempotent operations and precise state management.
 
-### Common Operations (Makefile)
-
-| Target | Description |
-|--------|-------------|
-| `make up` | Build and start all containers, creating volumes locally |
-| `make down` | Stop and remove containers, and destroy the network |
-| `make stop` | Stop containers cleanly without destroying the network |
-| `make start` | Start stopped containers |
-| `make logs` | Track stdout/stderr of all containers |
-| `make status` | List all containers and their status |
-| `make clean` | Remove containers and volumes |
-| `make fclean` | Deep clean including Docker images, volumes, and networks |
-| `make re` | Deep clean and restart from scratch (`fclean` -> `up`) |
+| Target | Description | Data Layer Status |
+|--------|-------------|-------------------|
+| `make up` | Builds images, ensures proper host directory permissions, and starts all containers. | Preserved / Created |
+| `make down` | Stops containers and destroys the L3 virtual network (`inception-network`). | Preserved |
+| `make stop` | Gracefully stops PID 1 processes (SIGTERM) while keeping the filesystem and network intact. | Preserved |
+| `make start` | Wakes up containers from the `stop` state. | Preserved |
+| `make logs` | Tracks `stdout`/`stderr` of all containers for debugging. | - |
+| `make status` | Lists all containers and their current state. | - |
+| `make clean` | Removes project containers, images, and Docker-managed volumes. | **Host Data Preserved** |
+| `make fclean`| `clean` + completely wipes physical host data (`/home/samatsum/data`) and prunes the system. | **Destroyed** |
+| `make emergency`| **[CAUTION]** Ultimate reset. Force-kills all containers globally, restarts Docker daemon, and wipes data. Used for deadlocks. | **Destroyed** |
+| `make re` | Deep clean and restart from scratch (`fclean` -> `up`). | **Recreated** |
 
 ---
 
