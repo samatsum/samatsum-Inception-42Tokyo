@@ -80,7 +80,7 @@ fclean: clean
 # ※ 警告: 他のプロジェクトのコンテナも全て巻き込んで強制終了します。
 emergency:
 	@echo "EMERGENCY RESET: Phase 1 - Restarting Docker daemon..."
-	@sudo snap restart docker || sudo systemctl restart docker
+	@sudo systemctl restart docker
 	@echo "Phase 2 - Waiting for daemon to be ready..."
 	@sleep 2 # デーモンがソケットをオープンするまでの猶予
 	@echo "Phase 3 - Forcefully removing all containers and cleaning system..."
@@ -104,8 +104,8 @@ re: fclean up
 # # 3. ホスト側の物理データの完全消去（物理層のリセット）
 # sudo rm -rf /home/samatsum/data
 
-# # 4. Dockerデーモンの再起動（Snap特有の権限ロックとキャッシュのクリア）
-# sudo snap restart docker
+# # 4. Dockerデーモンの再起
+# sudo systemctl restart docker
 
 # # 5. 環境の一から再構築
 # sudo make up
