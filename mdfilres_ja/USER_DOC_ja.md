@@ -88,13 +88,40 @@ make clean
 
 ## 4. 検証手順 (Health Checks)
 
-### 4.1 SSL/TLS の確認
+### 4.0 SSL/TLS の確認
 
-ブラウザで [https://samatsum.42.fr](https://www.google.com/search?q=https://samatsum.42.fr) を開き、URLの横にある鍵アイコンをクリックして、証明書が `samatsum.42.fr` に対して発行されていることを確認してください。
+ブラウザで [https://samatsum.42.fr]を開き、URLの横にある鍵アイコンをクリックして、証明書が `samatsum.42.fr` に対して発行されていることを確認してください。
+
+### 4.1 mariaDB
+
+**ログイン:** `docker exec -it mariadb mariadb -u root -p` 。
+
+
+* 
+`-it` はコンテナ内のプロセスと対話するための仮想端末 (TTY) を割り当てる命令である 。
+
+
+* パスワードは `secrets/db_root_password.txt` の内容を入力する 。
+
+
+
+
+* **データ確認SQL:**
+```
+`SHOW DATABASES;` (データベース一覧を表示) 
+
+`USE wordpress;` (操作対象のデータベースを選択) 
+ 
+`SHOW TABLES;` (テーブル一覧を表示) 
+ 
+`SELECT user_login, user_email FROM wp_users;`
+
+`USE wordpress; SELECT * FROM wp_comments;` 
+```
 
 ### 4.2 Adminer (データベースGUI)
 
-[https://samatsum.42.fr/adminer](https://www.google.com/search?q=https://samatsum.42.fr/adminer) にアクセスし、以下でログインします。
+[https://samatsum.42.fr/adminer]にアクセスし、以下でログインします。
 
 * **System**: `MySQL`
 * **Server**: `mariadb`

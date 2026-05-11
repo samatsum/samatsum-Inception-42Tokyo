@@ -98,7 +98,7 @@ The `Makefile` at the root directory abstracts complex setup and teardown operat
 | `make status` | Lists all containers and their current state (`docker container ls -a`). |
 | `make clean` | Removes project containers, images, and orphaned networks safely (`--remove-orphans`). |
 | `make fclean` | Executes `clean`, prunes the docker system, removes named volumes, and wipes physical host data (`/home/samatsum/data`). |
-| `make emergency` | **[Ultimate Reset]** Restarts Docker daemon (`snap`/`systemctl`), forcefully removes all global containers, prunes system, and wipes physical host data. |
+| `make emergency` | **[Ultimate Reset]** Restarts Docker daemon (`systemctl`), forcefully removes all global containers, prunes system, and wipes physical host data. |
 | `make re` | Executes `fclean` followed by `up` for a complete reset. |
 
 **To launch the infrastructure for the first time, simply run:**

@@ -90,7 +90,7 @@ NGINX (L4/L6/L7)
 `SELECT user_login, user_email FROM wp_users;` (WordPressの初期ユーザーが書き込まれていることを証明) 
 
 *
-`USE wordpress; [cite_start]SELECT * FROM wp_comments;` でデータが空でないことを示す 。
+`USE wordpress; SELECT * FROM wp_comments;` で
 
 
 
