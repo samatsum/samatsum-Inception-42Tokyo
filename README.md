@@ -7,7 +7,7 @@ Inception is a system administration project that virtualizes a multi-service in
 ### Architecture
 
 ```text
-[ Internet ]
+                                    [ Internet ]
                                           │
                             HTTPS (Port 443) / FTP (Port 21)
                                           │

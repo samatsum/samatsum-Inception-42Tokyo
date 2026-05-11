@@ -1,96 +1,82 @@
+```markdown
 # USER_DOC - User Operation Guide
 
-This document provides essential information for end-users and administrators to interact with the Inception infrastructure.
+This guide provides essential information for end-users and administrators to interact with the Inception infrastructure and verify its services.
 
-## 1. Service Overview
+---
 
-The stack provides a full-featured WordPress environment with additional management and optimization tools.
+## 1. Service Access Points
 
-| Service | Role | Access / Protocol |
+All web services are securely routed through NGINX via HTTPS (Port 443).
+
+| Service | Access URL / Protocol | Description |
 | :--- | :--- | :--- |
-| **NGINX** | Secure Gateway (TLS 1.2/1.3) | `https://samatsum.42.fr` |
-| **WordPress** | Content Management System | Via NGINX |
-| **Adminer** | Database Management Tool | `https://samatsum.42.fr/adminer` |
-| **MariaDB** | Relational Database | Internal only |
-| **Redis** | Object Cache (Speed Optimization) | Internal only |
-| **FTP (vsftpd)** | File Transfer Service | `ftp://samatsum.42.fr` (Port 21) |
+| **WordPress** | [https://samatsum.42.fr](https://samatsum.42.fr) | Main website and content management. |
+| **Adminer** | [https://samatsum.42.fr/adminer](https://samatsum.42.fr/adminer) | Database management interface. |
+| **Static Site** | [https://samatsum.42.fr/site/](https://samatsum.42.fr/site/) | Independent Flask-based portfolio site. |
+| **Grafana** | [https://samatsum.42.fr/grafana/](https://samatsum.42.fr/grafana/) | Real-time monitoring dashboard. |
+| **Prometheus** | [https://samatsum.42.fr/prometheus](https://samatsum.42.fr/prometheus) | Raw metrics and monitoring status. |
+| **FTP** | `ftp://samatsum.42.fr` (Port 21) | Direct file access to the WordPress volume. |
+
+*Note: Since the infrastructure uses self-signed certificates, you must click "Advanced" -> "Proceed" in your browser.*
 
 ---
 
-## 2. Starting and Stopping the Project
+## 2. Credentials Management
 
-All operations are managed through the `Makefile` located in the project root.
+For maximum security, passwords are not stored in the environment configuration. They are located in the `secrets/` directory on the host machine.
 
-### Start the Infrastructure
-```bash
-make up
-```
-*Note: On the first run, the system will automatically build images and initialize the database. This may take a minute.*
+| Credential | Key | Password File Location |
+| :--- | :--- | :--- |
+| **WP Admin** | `WP_ADMIN_USER` | `secrets/credentials.txt` |
+| **WP User** | `WP_NORMAL_USER` | `secrets/wp_normal_password.txt` |
+| **Database** | `MYSQL_USER` | `secrets/db_password.txt` |
+| **Grafana** | `GRAFANA_ADMIN_USER` | `grafana_password.txt` |
+| **FTP** | `ftpuser` | `secrets/ftp_password.txt` |
 
-### Stop the Infrastructure
-```bash
-# To stop containers while preserving data
-make down
-
-# To completely remove containers, networks, and all persistent data
-make fclean
-```
 
 ---
 
-## 3. Accessing the Platform
+## 3. Basic Operations
 
-### 3.1 WordPress Website
-- **Main Site**: [https://samatsum.42.fr](https://samatsum.42.fr)
-- **Admin Dashboard**: [https://samatsum.42.fr/wp-admin](https://samatsum.42.fr/wp-admin)
+Use the `Makefile` at the root of the project to manage the stack lifecycle.
 
-### 3.2 Database Management (Adminer)
-Adminer allows you to manage the MariaDB database via a web interface.
-- **URL**: [https://samatsum.42.fr/adminer](https://samatsum.42.fr/adminer)
-- **Server**: `mariadb`
-- **Username/Password**: See Section 4.
-
-### 3.3 FTP Access
-Use an FTP client (like FileZilla) to manage WordPress files.
-- **Host**: `samatsum.42.fr`
-- **Port**: `21`
+- **Start Infrastructure**: `make up`
+- **Graceful Stop**: `make stop` (Keeps network/IPs intact)
+- **Check Status**: `make status` (Verifies all 9 containers are `Up`)
+- **View Logs**: `make logs` (Monitor real-time application behavior)
 
 ---
 
-## 4. Credentials Management
+## 4. Service Verification (Health Check)
 
-For security, passwords are NOT stored in the `.env` file. They are stored in plain text files within the `srcs/secrets/` directory.
+To ensure the infrastructure is functioning beyond just "running," perform the following checks:
 
-| Credential | Location |
-| :--- | :--- |
-| **WP Admin Password** | `srcs/secrets/credentials.txt` |
-| **DB User Password** | `srcs/secrets/db_password.txt` |
-| **FTP User Password** | `srcs/secrets/ftp_password.txt` |
-
-*Note: Access to the `srcs/secrets/` directory is restricted to the host user.*
-
----
-
-## 5. Verifying Service Health
-
-To ensure all services are running correctly, use the following methods:
-
-### 5.1 Check Container Status
-Run the following command to see the status of all services:
+### 4.1 WordPress & Redis (L7 Integration)
+Verify that the Object Cache is correctly talking to the Redis container:
 ```bash
-docker ps
-```
-All services should have a status of `Up` (or `Up (healthy)` if health checks are implemented).
+docker exec -it wordpress wp redis status --path=/var/www/html --allow-root
 
-### 5.2 Monitor Real-time Logs
-If a service (like WordPress) is not responding, check the logs for errors:
-```bash
-make logs
 ```
 
-### 5.3 Verify SSL/TLS
-You can verify that NGINX is correctly serving over HTTPS using `curl`:
-```bash
-## HTTPレスポンスヘッダーの取得（-I）
-curl -I https://samatsum.42.fr
-```
+**Success Indicator**: Output should state `Status: Connected`.
+
+### 4.2 FTP (Volume Sharing)
+
+Verify that the FTP server can see and modify the WordPress filesystem:
+
+1. Connect via CLI: `ftp -p samatsum.42.fr` (Use Passive mode).
+2. Login with `ftpuser` and the secret password.
+3. Run `ls`. You should see `wp-config.php` and other WordPress core files.
+
+### 4.3 Monitoring (Data Pipeline)
+
+Verify that Prometheus is scraping metrics:
+
+1. Access [https://samatsum.42.fr/prometheus/targets](https://www.google.com/search?q=https://samatsum.42.fr/prometheus/targets).
+2. Ensure the `prometheus` endpoint is green and marked as **UP**.
+
+### 4.4 Static Site (Flask)
+
+Access [https://samatsum.42.fr/site/](https://samatsum.42.fr/site/) and verify the page loads. This confirms the NGINX L7 proxy is correctly stripping the `/site/` path and forwarding requests to the Python backend.
+

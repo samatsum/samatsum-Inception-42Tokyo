@@ -155,6 +155,13 @@ services:
     container_name: grafana
     depends_on:
       - prometheus
+    # 環境変数経由でユーザー名を、シークレットファイル経由でパスワードを注入
+    # 「grafana.ini には外部ファイルを読む能力がない」ため
+    environment:
+      - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
+      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_password
+    secrets:
+      - grafana_password
     restart: unless-stopped
     networks:
       inception:
@@ -171,6 +178,8 @@ secrets:
     file: ../secrets/wp_normal_password.txt
   ftp_password:
     file: ../secrets/ftp_password.txt
+  grafana_password:
+    file: ../secrets/grafana_password.txt
 
 networks:
   inception:

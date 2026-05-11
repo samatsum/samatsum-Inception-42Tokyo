@@ -1,151 +1,141 @@
-# DEV_DOC - Technical Documentation for Developers
+```markdown
+# DEV_DOC - Developer Setup Guide
 
-This document describes how to set up, build, manage, and understand the internal architecture of the Inception infrastructure. It is designed for successor engineers and peer-evaluators to facilitate maintenance and extension.
+This document provides the exact procedural steps for developers to clone, set up, and manage the Inception infrastructure in a local environment.
 
 ---
 
-## 1. Environment Setup (From Scratch)
+## 1. Prerequisites
 
-### 1.1 Prerequisites
-- Docker Engine and Docker Compose are installed.
-- `make` utility is available.
-- Host machine has the required data directories available.
+Before starting, ensure your host machine (Linux VM) meets the following requirements. This stack runs 9 concurrent containers and requires adequate resources.
 
-### 1.2 Host Resolution
-Map the project domain to the local loopback address to allow local testing.
+### 1.1 Hardware & OS Requirements
+- **OS**: Ubuntu 22.04 LTS (Jammy Jellyfish) [Kernel 6.8.0+]
+- **Architecture**: x86_64
+- **CPU**: Multi-core processor (Tested on 5 cores)
+- **Memory (RAM)**: Minimum 4GB, **8GB recommended** (Tested with 8.4GB). Essential for stable operation of in-memory caches and MariaDB.
+- **Storage**: At least 15-20GB of free disk space.
+
+### 1.2 Software Requirements
+- **Git**: For cloning the repository.
+- **Docker Engine & Docker Compose (V2)**
+- **Make**: For automating setup tasks.
+- **Sudo/Root Privileges**: Required to edit `/etc/hosts`, restart the Docker daemon, and manage local volume directories.
+
+---
+
+## 2. Setup Procedure
+
+### Step 2.1: Clone the Repository
+Clone the project to your local machine and navigate into the root directory.
+```bash
+git clone <your_repository_url> samatsum-inception
+cd samatsum-inception
+
+```
+
+### Step 2.2: Host Resolution
+
+To allow local testing via the browser with TLS certificates, map the project domain to the local loopback address.
+
 ```bash
 # Append to /etc/hosts (requires sudo)
 127.0.0.1   samatsum.42.fr
+
 ```
 
-### 1.3 Configuration Files (`.env`)
-To ensure idempotency and eliminate manual copy-pasting errors, generate the `.env` file using the following command. This creates the file in the `srcs/` directory with restricted permissions.
+### Step 2.3: Configuration Files (`.env`)
+
+Generate the `.env` file in the `srcs/` directory to hold non-sensitive configuration variables.
 
 ```bash
 mkdir -p srcs
-
 cat << 'EOF' > srcs/.env
-# .env
 DOMAIN_NAME=samatsum.42.fr
-# MYSQL
 MYSQL_DATABASE=wordpress
 MYSQL_USER=wpuser
-# WordPress
 WP_TITLE=inception
-## admin
 WP_ADMIN_USER=supervisor
 WP_ADMIN_EMAIL=zunandkun@gmail.com
-## viewer
 WP_NORMAL_USER=viewer
 WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
-## FTPServer
 FTP_USER=ftpuser
+GRAFANA_ADMIN_USER=admin
 EOF
-
 chmod 400 srcs/.env
+
 ```
 
-### 1.4 Secrets Management
-To achieve maximum security, passwords must not be passed as standard environment variables. Instead, they are stored as files in the `secrets/` directory and mounted into the containers at runtime. The applications are configured to read these via `_FILE` environment variables (e.g., `MYSQL_PASSWORD_FILE`).
+### Step 2.4: Secrets Management
+
+Passwords must **not** be stored in `.env`. Store them in the `secrets/` directory (which is ignored by Git). These will be mounted securely into the containers at runtime.
 
 ```bash
 mkdir -p secrets
-
 echo -n "db_pass_here" > secrets/db_password.txt
 echo -n "db_root_pass_here" > secrets/db_root_password.txt
 echo -n "wp_admin_pass_here" > secrets/credentials.txt
 echo -n "wp_normal_pass_here" > secrets/wp_normal_password.txt
 echo -n "ftp_pass_here" > secrets/ftp_password.txt
-
+echo -n "grafana_pass_here" > secrets/grafana_password.txt
 chmod 400 secrets/*.txt
+
 ```
 
 ---
 
-## 2. Build and Launch
+## 3. Makefile Usage
 
-### Makefile Targets (Operation Commands)
+The `Makefile` at the root directory abstracts complex setup and teardown operations.
 
-The `Makefile` at the root directory abstracts complex Docker Compose commands, ensuring idempotent operations and precise state management.
+| Target | Action |
+| --- | --- |
+| `make up` | Creates host volume directories with `chmod 755`, builds images, and starts all containers. |
+| `make down` | Stops containers and destroys the L3 virtual network. (Host data is preserved). |
+| `make stop` | Gracefully stops container processes (SIGTERM) without destroying the network. |
+| `make start` | Wakes up containers from the `stop` state. |
+| `make logs` | Displays real-time `stdout`/`stderr` logs for all containers. |
+| `make status` | Lists all containers and their current state (`docker container ls -a`). |
+| `make clean` | Removes project containers, images, and orphaned networks safely (`--remove-orphans`). |
+| `make fclean` | Executes `clean`, prunes the docker system, removes named volumes, and wipes physical host data (`/home/samatsum/data`). |
+| `make emergency` | **[Ultimate Reset]** Restarts Docker daemon (`snap`/`systemctl`), forcefully removes all global containers, prunes system, and wipes physical host data. |
+| `make re` | Executes `fclean` followed by `up` for a complete reset. |
 
-| Target | Description | Data Layer Status |
-|--------|-------------|-------------------|
-| `make up` | Builds images, ensures proper host directory permissions, and starts all containers. | Preserved / Created |
-| `make down` | Stops containers and destroys the L3 virtual network (`inception-network`). | Preserved |
-| `make stop` | Gracefully stops PID 1 processes (SIGTERM) while keeping the filesystem and network intact. | Preserved |
-| `make start` | Wakes up containers from the `stop` state. | Preserved |
-| `make logs` | Tracks `stdout`/`stderr` of all containers for debugging. | - |
-| `make status` | Lists all containers and their current state. | - |
-| `make clean` | Removes project containers, images, and Docker-managed volumes. | **Host Data Preserved** |
-| `make fclean`| `clean` + completely wipes physical host data (`/home/samatsum/data`) and prunes the system. | **Destroyed** |
-| `make emergency`| **[CAUTION]** Ultimate reset. Force-kills all containers globally, restarts Docker daemon, and wipes data. Used for deadlocks. | **Destroyed** |
-| `make re` | Deep clean and restart from scratch (`fclean` -> `up`). | **Recreated** |
+**To launch the infrastructure for the first time, simply run:**
 
-### 2.2 First Launch
-Navigate to the root directory and execute:
 ```bash
 make up
+
 ```
 
 ---
 
-## 3. Container Lifecycle & Architectural Details
+## 4. Docker Compose Commands
 
-Strict adherence to the "One Process Per Container" and "Foreground Execution" rules is enforced across all services. 
+If you need to bypass the Makefile for debugging, you can use the raw `docker compose` commands against the configuration file located at `srcs/docker-compose.yml`.
 
-### 3.1 Startup Flow & Background Prohibition
-All services must run in the foreground to replace the shell as PID 1. This prevents zombie processes and ensures signals (like `SIGTERM`) are caught correctly for graceful shutdowns.
-
-- **MariaDB**: 
-  - `entrypoint.sh` initializes the database if `/var/lib/mysql/mysql` is missing.
-  - Final execution: `exec mariadbd --user=mysql` (Foreground).
-- **WordPress (PHP-FPM)**: 
-  - **Race Condition Prevention**: The script uses `wp db check` in a loop to poll MariaDB until it is fully ready before attempting core installation.
-  - Final execution: `exec php-fpm8.3 -F` (Foreground).
-- **NGINX**: 
-  - Final execution: `nginx -g "daemon off;"` (Foreground).
-
-### 3.2 Strict Port 80 Rejection
-To ensure robust security and enforce HTTPS, port 80 (HTTP) is explicitly dropped/rejected in the NGINX configuration, rather than simply being unexposed. Even if a request reaches the server, it is explicitly denied at the server block level, prioritizing strict protocol compliance over slight performance overhead.
-
-### 3.3 Script Safety (Fail-Fast)
-All entrypoint scripts (`script.sh` / `entrypoint.sh`) begin with:
-```bash
-set -uo pipefail
-```
-This guarantees that any failure (e.g., a missing secret file or a failed DB ping) immediately crashes the script rather than allowing the container to run in an unstable state.
+* **Build and Run (Detached)**: `docker compose -f srcs/docker-compose.yml up --build -d`
+* **Stop and remove containers**: `docker compose -f srcs/docker-compose.yml down`
+* **Remove everything including volumes**: `docker compose -f srcs/docker-compose.yml down -v`
+* **View logs for a specific container**: `docker compose -f srcs/docker-compose.yml logs -f wordpress`
 
 ---
 
-## 4. Data Storage and Persistence
+## 5. Data Persistence
 
-Project data must persist across container restarts and VM reboots. This is achieved using Docker Named Volumes backed by host bind mounts.
+To ensure data survives container destruction (`make down`), this project uses Docker Named Volumes backed by **Host Bind Mounts**.
 
-### 4.1 Volume Design
+Data is strictly separated into three distinct host directories under `/home/samatsum/data/`:
 
-Data is strictly separated and stored on the host machine at `/home/samatsum/data/`.
+1. **`/home/samatsum/data/mariadb`**: Stores the relational database files.
+2. **`/home/samatsum/data/wordpress`**: Stores WordPress core files, themes, and uploaded media. Shared with the FTP container.
+3. **`/home/samatsum/data/prometheus`**: Stores time-series metric data for Grafana dashboards.
 
-```yaml
-volumes:
-  mariadb_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/samatsum/data/mariadb
-  wordpress_data:
-    driver: local
-    driver_opts:
-      type: none
-      o: bind
-      device: /home/samatsum/data/wordpress
-```
-**Why this approach?**
+*Note: The `make up` command automatically executes `mkdir -p` and `chmod 755` on these host directories before Docker attempts to bind them. This prevents permission errors caused by Docker creating directories as `root`.*
 
-By using `local` volumes with the `bind` option, we retain Docker's volume management abstraction while enforcing exactly where the data lives on the host filesystem. This prevents data loss when using `docker-compose down`.
+---
 
-### 4.2 Complete Reset (fclean)
+## Next Steps
 
-```bash
-make fclean
-```
+Once `make up` has completed successfully, the environment is fully operational.
+Please refer to **`USER_DOC.md`** for instructions on how to access the services, log into the dashboards, and verify the health of the infrastructure.
