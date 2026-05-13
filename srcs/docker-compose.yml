@@ -136,7 +136,7 @@ services:
     container_name: ftp
     ports:
       - "21:21" #FTP（ファイル転送制御）専用 
-      - "21100-21110:21100-21110"
+      - "21100-21110:21100-21110" #FTPのパッシブモード（Passive Mode）における、実際のファイルデータ転送用のポート範囲
     volumes:
       - wordpress_data:/var/www/html
     env_file:

@@ -147,11 +147,17 @@ FTPサーバーが共有ボリュームを操作できるか確認します。
 2. `ftpuser` としてログインし、`ls` を実行。
 3. `wp-config.php` などのコアファイルが表示されることを確認。
 
+get <ファイル名> (ダウンロード)
+    リモート（サーバー）から、ローカル（あなたのPC）へファイルを持ってきます。
+
+put <ファイル名> (アップロード)
+    ローカル（あなたのPC）から、リモート（サーバー）へファイルを送り込みます。
+
 ### 4.5 監視パイプライン (Prometheus & Grafana)
 
-1. **Prometheus**: [https://samatsum.42.fr/prometheus/targets](https://www.google.com/search?q=https://samatsum.42.fr/prometheus/targets) にアクセスし、状態が緑色の **UP** であることを確認。
-2. **Grafana**: [https://samatsum.42.fr/grafana/](https://www.google.com/search?q=https://samatsum.42.fr/grafana/) にアクセス。「WordPress Monitoring」ダッシュボードを開き、NGINXのリクエスト数やPHP-FPMのプロセス数のリアルタイムグラフを確認。
+1. **Prometheus**: [https://samatsum.42.fr/prometheus/targets]にアクセスし、状態が緑色の **UP** であることを確認。
+2. **Grafana**: [https://samatsum.42.fr/grafana/]にアクセス。
 
 ### 4.6 静的サイト (Flask)
 
-[https://samatsum.42.fr/site/](https://www.google.com/search?q=https://samatsum.42.fr/site/) にアクセスし、Pythonベースのサイトが独立して表示されることを確認。
+[https://samatsum.42.fr/site/]にアクセスし、Pythonベースのサイトが独立して表示されることを確認。
