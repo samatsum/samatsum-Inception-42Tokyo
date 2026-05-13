@@ -109,7 +109,7 @@ make up
 
 **本課題での判断**: Docker コンテナを VM 内で動作させる。課題要件で「VM を使用すること」が指定されているため、ホスト OS → VM → Docker の 3 層構成となる。
 
-> 参考動画: [YouTube — VM vs Docker 対比解説](https://www.youtube.com/watch?v=-NTdH4Y2veI)（→ [クロスリファレンス](dev_docs/references.md#動画)）
+> 参考動画: [YouTube — VM vs Docker 対比解説](https://www.youtube.com/watch?v=-NTdH4Y2veI)
 
 ### 2. Docker Secrets vs Environment Variables
 
