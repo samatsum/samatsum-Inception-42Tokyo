@@ -108,7 +108,7 @@ make up
 
 **Decision in this project**: Docker containers run inside a VM. Since the project requirements specify the use of a VM, the infrastructure follows a 3-layer architecture: Host OS → VM → Docker.
 
-> Reference Video: [YouTube — VM vs Docker Explanation](https://www.youtube.com/watch?v=-NTdH4Y2veI) (→ [Cross-reference](https://www.google.com/search?q=%23auxiliary-references))
+> Reference Video: [YouTube — VM vs Docker Explanation](https://www.youtube.com/watch?v=-NTdH4Y2veI) 
 
 ### 2. Docker Secrets vs Environment Variables
 
