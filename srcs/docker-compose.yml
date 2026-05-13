@@ -155,11 +155,10 @@ services:
     container_name: grafana
     depends_on:
       - prometheus
-    # 環境変数経由でユーザー名を、シークレットファイル経由でパスワードを注入
-    # 「grafana.ini には外部ファイルを読む能力がない」ため
+    # ユーザー名は環境変数、パスワードはスクリプト経由で読み込むため
+    # ここでのパスワード指定は不要になります。
     environment:
       - GF_SECURITY_ADMIN_USER=${GRAFANA_ADMIN_USER}
-      - GF_SECURITY_ADMIN_PASSWORD__FILE=/run/secrets/grafana_password
     secrets:
       - grafana_password
     restart: unless-stopped

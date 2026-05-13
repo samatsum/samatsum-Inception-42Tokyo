@@ -88,10 +88,6 @@ make clean
 
 ## 4. 検証手順 (Health Checks)
 
-### 4.0 SSL/TLS の確認
-
-ブラウザで [https://samatsum.42.fr]を開き、URLの横にある鍵アイコンをクリックして、証明書が `samatsum.42.fr` に対して発行されていることを確認してください。
-
 ### 4.1 mariaDB
 
 **ログイン:** `docker exec -it mariadb mariadb -u root -p` 。
@@ -135,6 +131,7 @@ WordPressがRedisコンテナと通信しているか確認します。
 ```bash
 docker exec -it wordpress wp redis status --path=/var/www/html --allow-root
 
+
 ```
 
 **成功指標**: 出力に `Status: Connected` と表示されること。
@@ -156,7 +153,12 @@ put <ファイル名> (アップロード)
 ### 4.5 監視パイプライン (Prometheus & Grafana)
 
 1. **Prometheus**: [https://samatsum.42.fr/prometheus/targets]にアクセスし、状態が緑色の **UP** であることを確認。
+prometheus_http_requests_total de Execute
+
+
 2. **Grafana**: [https://samatsum.42.fr/grafana/]にアクセス。
+
+DasyuBoard
 
 ### 4.6 静的サイト (Flask)
 
