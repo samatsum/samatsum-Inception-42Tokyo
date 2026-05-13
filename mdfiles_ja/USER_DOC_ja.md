@@ -153,13 +153,13 @@ put <ファイル名> (アップロード)
 ### 4.5 監視パイプライン (Prometheus & Grafana)
 
 1. **Prometheus**: [https://samatsum.42.fr/prometheus/targets]にアクセスし、状態が緑色の **UP** であることを確認。
-prometheus_http_requests_total de Execute
 
 
 2. **Grafana**: [https://samatsum.42.fr/grafana/]にアクセス。
 
-DasyuBoard
+ダッシュボードを開くとプロメテウスのデータのグラフが見えるはず。
 
 ### 4.6 静的サイト (Flask)
 
-[https://samatsum.42.fr/site/]にアクセスし、Pythonベースのサイトが独立して表示されることを確認。
+[https://samatsum.42.fr/site/]　
+にアクセスし、Pythonベースのサイトが独立して表示されることを確認。
