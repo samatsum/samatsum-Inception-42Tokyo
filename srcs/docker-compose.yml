@@ -68,7 +68,7 @@ services:
     secrets:
       - db_password
       - credentials
-      - wp_normal_password
+      - wp_editer_password
     restart: unless-stopped
     networks:
       inception:
@@ -174,8 +174,8 @@ secrets:
     file: ../secrets/db_root_password.txt
   credentials:
     file: ../secrets/credentials.txt
-  wp_normal_password:
-    file: ../secrets/wp_normal_password.txt
+  wp_editer_password:
+    file: ../secrets/wp_editer_password.txt
   ftp_password:
     file: ../secrets/ftp_password.txt
   grafana_password:

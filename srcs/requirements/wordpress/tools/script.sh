@@ -12,7 +12,7 @@ WP_PATH="/var/www/html"
 set +x
 MYSQL_PASSWORD=$(cat /run/secrets/db_password)
 WP_ADMIN_PASSWORD=$(cat /run/secrets/credentials)
-WP_NORMAL_PASSWORD=$(cat /run/secrets/wp_normal_password)
+WP_EDITER_PASSWORD=$(cat /run/secrets/wp_editer_password)
 set -x
 
 # wp-cliがなければダウンロード
@@ -78,8 +78,8 @@ if ! wp core is-installed --path=${WP_PATH} --allow-root 2>/dev/null; then
         --allow-root \
         --skip-email
 
-    wp user create ${WP_NORMAL_USER} ${WP_NORMAL_EMAIL} \
-        --user_pass=${WP_NORMAL_PASSWORD} \
+    wp user create ${WP_EDITER_USER} ${WP_EDITER_EMAIL} \
+        --user_pass=${WP_EDITER_PASSWORD} \
         --role=author \
         --path=${WP_PATH} \
         --allow-root

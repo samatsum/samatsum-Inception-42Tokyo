@@ -36,7 +36,7 @@ For security compliance, no passwords are stored in the git repository or `.env`
 | Credential Type | Username | Password File Location |
 | --- | --- | --- |
 | **WordPress Admin** | `WP_ADMIN_USER` | `secrets/credentials.txt` |
-| **WordPress User** | `WP_NORMAL_USER` | `secrets/wp_normal_password.txt` |
+| **WordPress User** | `WP_EDITER_USER` | `secrets/wp_editer_password.txt` |
 | **MariaDB User** | `MYSQL_USER` | `secrets/db_password.txt` |
 | **Grafana Admin** | `GRAFANA_ADMIN_USER` | `secrets/grafana_password.txt` |
 | **FTP User** | `FTP_USER` | `secrets/ftp_password.txt` |

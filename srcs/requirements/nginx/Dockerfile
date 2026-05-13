@@ -41,6 +41,7 @@ COPY conf/default /etc/nginx/sites-available/.
 COPY tools/script.sh ./script.sh
 
 #自己署名証明書（SSL）を作成するための情報
+# これらは、HTTPS通信を確立する際にブラウザへ「私は42Tokyoのサーバーです」と提示するための公開情報（身分証明書の記載内容）です。
 ARG CERT_FOLDER="/etc/nginx/cert"
 ARG CERT="/etc/nginx/cert/server.crt"
 ARG CERT_KEY="/etc/nginx/cert/server.key"
@@ -52,11 +53,19 @@ ARG UNIT="42"
 ARG COMMON_NAME="localhost"
 
 #SSL通信に必要な「鍵」と「証明書」をopensslコマンドで生成
+# openssl req -newkey rsa:4096... のプロセスは、指定された ARG の文字列（JPや42Tokyo）を元に鍵を計算するわけではありません。鍵の生成には、
+# OSカーネルが提供する強力な乱数生成器（システムコールの /dev/urandom など）が使用されます。
+# そのため、第三者がリポジトリを git clone して全く同じ文字列材料でビルドを実行しても、
+# 乱数のシードが異なるため生成されるRSA鍵は数学的に1バイトも一致しない完全な別物になります。材料が公開されていても、元のサーバーの鍵を復元・悪用することは不可能です。
 RUN mkdir -p ${CERT_FOLDER}
 RUN openssl req -newkey rsa:4096 -x509 -sha256 -days 365 -nodes \
     -out ${CERT} \
     -keyout ${CERT_KEY} \
     -subj "/C=${COUNTRY}/ST=${STATE}/L=${LOCALITY}/O=${ORGANIZATION}/OU=${UNIT}/CN=${COMMON_NAME}"
+# RUN openssl... コマンドが実行されるのは、Dockerがイメージをビルドする隔離されたプロセスの中です。
+# 生成された本物の秘密鍵（server.key）は、
+# Docker内部のファイルシステムにのみ書き込まれ、ホストマシンのGitディレクトリには一切保存されません。
+
 
 RUN chmod +x ./script.sh
 

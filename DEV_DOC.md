@@ -57,8 +57,8 @@ MYSQL_USER=wpuser
 WP_TITLE=inception
 WP_ADMIN_USER=supervisor
 WP_ADMIN_EMAIL=zunandkun@gmail.com
-WP_NORMAL_USER=viewer
-WP_NORMAL_EMAIL=matsumotosanshiro@gmail.com
+WP_EDITER_USER=editer
+WP_EDITER_EMAIL=matsumotosanshiro@gmail.com
 FTP_USER=ftpuser
 GRAFANA_ADMIN_USER=admin
 EOF
@@ -75,7 +75,7 @@ mkdir -p secrets
 echo -n "db_pass_here" > secrets/db_password.txt
 echo -n "db_root_pass_here" > secrets/db_root_password.txt
 echo -n "wp_admin_pass_here" > secrets/credentials.txt
-echo -n "wp_normal_pass_here" > secrets/wp_normal_password.txt
+echo -n "wp_editer_pass_here" > secrets/wp_editer_password.txt
 echo -n "ftp_pass_here" > secrets/ftp_password.txt
 echo -n "grafana_pass_here" > secrets/grafana_password.txt
 chmod 400 secrets/*.txt

@@ -64,8 +64,8 @@ make clean
 
 
 * **WordPress 一般ユーザー**:
-* ユーザー名: `WP_NORMAL_USER`
-* パスワード: `secrets/wp_normal_password.txt` の内容
+* ユーザー名: `WP_EDITER_USER`
+* パスワード: `secrets/wp_editer_password.txt` の内容
 
 
 * **MariaDB (DBユーザー)**:

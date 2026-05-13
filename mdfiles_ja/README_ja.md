@@ -95,20 +95,155 @@ make up
 
 *日常的な操作やサービスへのアクセスURLについては `USER_DOC.md` を、技術仕様の詳細やMakefileのターゲットについては `DEV_DOC.md` を参照してください。*
 
-## リソース
+## 4つの比較（設計判断の根拠）
 
-### 1. 設計の選択肢（詳細）
+### 1. Virtual Machine vs Docker
 
-* **PID 1 とシグナルハンドリング**: ゾンビプロセスの発生を防ぎ、`SIGTERM` シグナルを正常にキャッチするために、エントリポイントスクリプトでは `exec` によるプロセス置換を使用しています。ボーナスコンテナでは、シグナルを適切に転送するために軽量なinitシステムである `tini` を活用しています。
-* **ボリューム戦略**: `/home/samatsum/data/` にマップされた `バインドマウント` を使用することで、コンテナを破棄（`make down`）してもデータが永続化されることを保証しつつ、ホスト側からのFTP操作も可能にしています。
-* **堅牢性 (Fail-Fast)**: すべてのシェルスクリプトは `set -uo pipefail` で始まります。これにより、未定義変数の参照やパイプライン内でのコマンド失敗時に即座にスクリプトが終了し、システムが不安定な状態で稼働し続けるのを防ぎます。
+| 観点 | Virtual Machine | Docker Container |
+|------|-----------------|------------------|
+| 仮想化層 | **ハードウェア層**（Hypervisor） | **アプリケーション層**（コンテナランタイム） |
+| OS | 各 VM に完全な OS カーネル | ホスト OS のカーネルを共有 |
+| 起動時間 | 数十秒〜数分 | 数秒 |
+| リソース効率 | 低（OS 全体をエミュレート） | 高（プロセス分離のみ） |
+| 分離レベル | 強（完全な仮想化） | 中（namespace + cgroups） |
 
-### 2. AIの利用について
+**本課題での判断**: Docker コンテナを VM 内で動作させる。課題要件で「VM を使用すること」が指定されているため、ホスト OS → VM → Docker の 3 層構成となる。
 
-本プロジェクトの開発において、AIは技術的なペアプログラミングのメンターとして、アーキテクチャの決定やロジックの検証に活用されました。具体的には以下の通りです：
+> 参考動画: [YouTube — VM vs Docker 対比解説](https://www.youtube.com/watch?v=-NTdH4Y2veI)（→ [クロスリファレンス](dev_docs/references.md#動画)）
 
-* **アーキテクチャの監査**: NGINXとPrometheusのサブパス間におけるL7ルーティングの競合（トレイリングスラッシュの問題）の特定と解決。
-* **デバッグ**: Redisオブジェクトキャッシュのドロップイン・インストール時におけるファイルシステム権限の衝突（`www-data` vs `root`）の解決。
-* **最適化**: MariaDBとWordPressのコールドスタート時におけるレースコンディションを防ぐため、`wp-cli` 自動インストールスクリプトに堅牢なポーリング機構（L4接続スタンバイ）を実装。
+### 2. Docker Secrets vs Environment Variables
 
-*注：生成されたすべてのロジック、概念、および設定は、実装前に開発者によって手動でテスト、検証され、深く理解されています。*
+| 観点 | Docker Secrets | Environment Variables |
+|------|----------------|----------------------|
+| 用途 | 機密情報（パスワード、API キー等） | 非機密設定値（URL、ユーザー名等） |
+| 保存場所 | `/run/secrets/` （tmpfs、メモリ上） | プロセス環境 |
+| 可視性 | `docker inspect` で見えない | `docker inspect` で見える |
+| git 管理 | `.gitignore` で除外必須 | `.env` として管理可 |
+
+**【結論】**
+環境変数は設定値（ドメイン名やポート番号など）を渡すには便利ですが、機密情報の保存には適していません。Docker Secretsを使用することで、データがメモリ上（tmpfs）のみに保持され、極めて高い堅牢性とメモリ安全性が担保されます。
+
+
+### 3. Docker Network vs Host Network
+
+| 観点 | Docker Network (bridge) | Host Network |
+|------|------------------------|--------------|
+| 分離 | コンテナ間で独立したネットワーク | ホストのネットワーク名前空間を直接使用 |
+| DNS | Docker 内部 DNS（コンテナ名で解決） | ホストの `/etc/resolv.conf` |
+| ポート | 明示的にマッピング（`-p 443:443`） | コンテナがホストのポートを直接占有 |
+| セキュリティ | 高（外部から直接アクセス不可） | 低（ホストと同等） |
+
+**【結論】**
+Host Networkはネットワークの隔離（Network Namespace）を破壊し、セキュリティ上の大きな脆弱性を生みます。Docker Network（Bridge）を使用することで、L3レイヤーでのコンテナ間の安全な通信（内部DNS）と、L4レイヤーでの厳密なアクセス制御（必要なポートだけを外に開く）が可能になります。
+
+
+
+### 4. Docker Volumes vs Bind Mounts
+
+| 観点 | Named Volumes | Bind Mounts |
+|------|---------------|-------------|
+| 管理 | Docker が管理（`docker volume ls`） | ホストのファイルシステム直接 |
+| パス指定 | 論理名（`mariadb_data`） | 絶対パス（`/home/user/data`） |
+| ポータビリティ | 高（Docker 環境間で移動可） | 低（ホストパスに依存） |
+| 初期化 | 空 or イメージからコピー | ホスト側のファイルが優先 |
+
+
+> 参考資料: [Qiita — P-man_Brown: Named Volumes + driver_opts](https://qiita.com/P-man_Brown/items/6d6e870acc1720f04486)（→ [クロスリファレンス](dev_docs/references.md#qiita)）
+- `mariadb_data` → `/home/samatsum/data/mariadb`
+- `wordpress_data` → `/home/samatsum/data/wordpress`
+
+これにより、Docker の Volume 管理機能を活かしつつ、VM 再起動後もデータを永続化。
+
+**【結論】**
+Bind Mountsは手元のコードをコンテナに同期させるような開発環境では便利ですが、ホスト環境への依存度が強くなります。Docker Volumesを使用することで、データの管理をDockerに一任でき、システムの堅牢性と移植性が向上します。
+
+
+確認方法
+```bash
+docker volume ls
+docker volume inspect <実際の名前>
+docker compose config --volumes
+```
+
+---
+
+## Resources（一次資料）
+
+### Docker
+
+- [Compose file reference](https://docs.docker.com/reference/compose-file/)
+- [Use secrets in Compose](https://docs.docker.com/compose/how-tos/use-secrets/)
+- [Volumes in Compose](https://docs.docker.com/reference/compose-file/volumes/)
+- [Network in Compose](https://docs.docker.com/compose/how-tos/networking/)
+- [Docker Compose CLI Reference](https://docs.docker.com/reference/cli/docker/compose/)
+
+### Alpine Linux
+
+- [Alpine Linux Releases](https://alpinelinux.org/releases/)
+- [Alpine Wiki - MariaDB](https://wiki.alpinelinux.org/wiki/MariaDB)
+- [Alpine Wiki - Nginx](https://wiki.alpinelinux.org/wiki/Nginx)
+
+### NGINX
+
+- [nginx.org Documentation](https://nginx.org/en/docs/)
+- [nginx.org Beginner's Guide](https://nginx.org/en/docs/beginners_guide.html)
+- [ngx_http_ssl_module](https://nginx.org/en/docs/http/ngx_http_ssl_module.html)
+- [ngx_http_fastcgi_module](https://nginx.org/en/docs/http/ngx_http_fastcgi_module.html)
+
+### MariaDB
+
+- [mariadb-install-db](https://mariadb.com/docs/server/clients-and-utilities/deployment-tools/mariadb-install-db)
+- [MariaDB Server Documentation](https://mariadb.com/kb/en/documentation/)
+- [mariadb-install-db — デフォルト作成アカウント](https://mariadb.com/kb/en/mariadb-install-db/#user-accounts-created-by-default)
+
+### WordPress / PHP
+
+- [WP-CLI Handbook](https://make.wordpress.org/cli/handbook/)
+- [wp core install](https://developer.wordpress.org/cli/commands/core/install/)
+- [wp user create](https://developer.wordpress.org/cli/commands/user/create/)
+- [wp post list](https://developer.wordpress.org/cli/commands/post/list/)
+
+### TLS / セキュリティ
+
+- [RFC 8446 (TLS 1.3)](https://datatracker.ietf.org/doc/html/rfc8446)
+- [OpenSSL Documentation](https://www.openssl.org/docs/)
+
+### Makefile
+
+- [GNU Make Manual](https://www.gnu.org/software/make/manual/make.html)
+
+### 環境（VM）
+
+- [VirtualBox User Manual](https://www.virtualbox.org/manual/UserManual.html)
+
+### moby/moby Issues（restart policy）
+
+- [#11065 — Non-fatal signals break restart policies](https://github.com/moby/moby/issues/11065)
+- [#26464 — Taking stop-signal into account when docker kill](https://github.com/moby/moby/pull/26464)
+- [#41302 — Signal breaks unless-stopped restart policy](https://github.com/moby/moby/issues/41302)
+- [#47792 — docker kill prevents unless-stopped from starting after reboot](https://github.com/moby/moby/issues/47792)
+
+### 書籍
+
+- [Docker（日本語版）](https://www.oreilly.com/library/view/docker/9784873117768/) — O'Reilly Japan, 2016年8月, 384ページ（紙の本で参照）
+
+### 参考資料（補助）
+
+課題書に明記されていないが参照した資料。一次資料で確認した内容の理解補助として使用。
+
+- [Qiita — P-man_Brown: Named Volumes + driver_opts ハイブリッド方式](https://qiita.com/P-man_Brown/items/6d6e870acc1720f04486)（→ §4 Volumes 設計判断の採用根拠）
+- [Qiita — etaroid: Docker secrets 補足 記事1](https://qiita.com/etaroid/items/b1024c7d200a75b992fc)
+- [Qiita — etaroid: Docker secrets 補足 記事2](https://qiita.com/etaroid/items/88ec3a0e2d80d7cdf87a)
+- [Qiita — etaroid: Docker secrets 補足 記事3](https://qiita.com/etaroid/items/40106f13d47bfcbc2572)
+- [YouTube — VM vs Docker 対比解説](https://www.youtube.com/watch?v=-NTdH4Y2veI)（→ §1 VM vs Docker 設計判断の参考）
+
+---
+
+## AI 使用説明
+
+本課題では AI（Claude）を**ペアプログラミングの Navigator** として活用した。
+
+### 使用方針（AI-Navigated Pair Programming with Scaffolding）
+
+- **AI がやったこと**: 概念の解説、設計判断の根拠説明、確認用コマンドの提示、コードのスケルトン提示、レビュー・フィードバック
+- **AI がやらなかったこと**: 完成コードの直接生成、ファイルの直接編集
